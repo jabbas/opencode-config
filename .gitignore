@@ -1,0 +1,16 @@
+# Dependencies
+node_modules/
+package.json
+package-lock.json
+bun.lock
+
+# Secrets — NEVER commit
+alibaba-cloud.apikey
+.env
+*.secret
+
+# Ephemeral session files
+session-*.md
+
+# OS junk
+.DS_Store

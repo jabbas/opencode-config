@@ -1,0 +1,455 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "model": "anthropic/claude-sonnet-4-6",
+  "small_model": "anthropic/claude-haiku-4-5",
+
+  "instructions": ["~/.config/opencode/docs/global-rules.md", "~/.config/opencode/docs/memory-rules.md"],
+
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 10000
+  },
+
+  "plugin": [
+    "opencode-mnemosyne",
+    "opencode-anthropic-oauth"
+  ],
+
+  "permission": {
+    "edit": "ask",
+    "bash": {
+      "*": "ask",
+      "cat *": "allow",
+      "echo *": "allow",
+      "grep *": "allow",
+      "wc *": "allow",
+      "pwd": "allow",
+      "pwd *": "allow",
+      "find . *": "allow",
+      "find ./ *": "allow",
+      "head *": "allow",
+      "sort *": "allow",
+      "ls *": "allow",
+      "git log *": "allow",
+      "tail *": "allow",
+      "jq *": "allow",
+      "yq *": "allow",
+      "git status *": "allow",
+      "git diff *": "allow",
+      "git branch *": "allow"
+    }
+  },
+
+  "tools": {
+    "playwright_*": false,
+    "homeassistant_*": false,
+    "chrome-devtools_*": false,
+    "firecrawl_*": false,
+    "webfetch": false,
+    "WebFetch": false
+  },
+
+  "agent": {
+    "plan": {
+      "prompt": "You are in PLAN MODE. Analyze the codebase thoroughly before making any changes. Do not execute any commands or write files. Only provide detailed analysis and plan.",
+      "steps": 15,
+      "tools": {
+        "bash": false,
+        "edit": false,
+        "write": false
+      },
+      "permission": {
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "brainstorming": "allow",
+          "writing-plans": "allow"
+        }
+      }
+    },
+
+    "coder": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "permission": {
+        "task": "allow",
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "brainstorming": "allow",
+          "writing-plans": "allow",
+          "executing-plans": "allow",
+          "subagent-driven-development": "allow",
+          "dispatching-parallel-agents": "allow",
+          "test-driven-development": "allow",
+          "systematic-debugging": "allow",
+          "verification-before-completion": "allow",
+          "requesting-code-review": "allow",
+          "receiving-code-review": "allow",
+          "using-git-worktrees": "allow",
+          "finishing-a-development-branch": "allow",
+          "claude-api": "allow",
+          "webapp-testing": "allow"
+        }
+      }
+    },
+
+    "general": {
+      "permission": {
+        "task": "allow",
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "brainstorming": "allow",
+          "writing-plans": "allow",
+          "executing-plans": "allow",
+          "subagent-driven-development": "allow",
+          "dispatching-parallel-agents": "allow",
+          "test-driven-development": "allow",
+          "systematic-debugging": "allow",
+          "verification-before-completion": "allow",
+          "requesting-code-review": "allow",
+          "receiving-code-review": "allow",
+          "using-git-worktrees": "allow",
+          "finishing-a-development-branch": "allow",
+          "pdf": "allow",
+          "xlsx": "allow",
+          "claude-api": "allow",
+          "customize-opencode": "allow"
+        }
+      }
+    },
+
+    "architect": {
+      "model": "anthropic/claude-opus-4-8",
+      "permission": {
+        "bash": "deny",
+        "task": "allow",
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "brainstorming": "allow",
+          "writing-plans": "allow"
+        }
+      }
+    },
+
+    "debugger": {
+      "model": "anthropic/claude-opus-4-8",
+      "permission": {
+        "bash": {
+          "*": "ask",
+          "kubectl get *": "allow",
+          "kubectl describe *": "allow",
+          "kubectl logs *": "allow",
+          "kubectl top *": "allow",
+          "kubectl events *": "allow",
+          "flux get *": "allow",
+          "flux logs *": "allow",
+          "helm status *": "allow",
+          "helm history *": "allow",
+          "helm get *": "allow"
+        },
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "systematic-debugging": "allow",
+          "verification-before-completion": "allow"
+        }
+      }
+    },
+
+    "devops": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "permission": {
+        "task": "allow",
+        "bash": {
+          "*": "ask",
+          "git log *": "allow",
+          "git status *": "allow",
+          "git diff *": "allow",
+          "git branch *": "allow",
+          "gh pr list *": "allow",
+          "gh pr view *": "allow",
+          "gh run list *": "allow",
+          "gh run view *": "allow",
+          "gh workflow list *": "allow",
+          "gh workflow view *": "allow",
+          "kubectl get *": "allow",
+          "kubectl describe *": "allow",
+          "kubectl logs *": "allow",
+          "kubectl top *": "allow",
+          "helm template *": "allow",
+          "helm list *": "allow",
+          "helm status *": "allow",
+          "helm history *": "allow",
+          "flux get *": "allow",
+          "flux logs *": "allow",
+          "kustomize build *": "allow"
+        },
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "systematic-debugging": "allow",
+          "verification-before-completion": "allow",
+          "writing-plans": "allow",
+          "using-git-worktrees": "allow",
+          "finishing-a-development-branch": "allow"
+        }
+      }
+    },
+
+    "webdebugger": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "tools": {
+        "playwright_*": true,
+        "chrome-devtools_*": true
+      },
+      "permission": {
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "systematic-debugging": "allow",
+          "verification-before-completion": "allow",
+          "webapp-testing": "allow",
+          "web-perf": "allow"
+        }
+      }
+    },
+
+    "ha": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "tools": {
+        "homeassistant_*": true
+      },
+      "permission": {
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow"
+        }
+      }
+    },
+
+    "webscraper": {
+      "model": "anthropic/claude-haiku-4-5",
+      "tools": {
+        "firecrawl_firecrawl_scrape": true,
+        "firecrawl_firecrawl_map": true,
+        "firecrawl_firecrawl_crawl": true,
+        "firecrawl_firecrawl_check_crawl_status": true,
+        "firecrawl_firecrawl_interact": true,
+        "firecrawl_firecrawl_interact_stop": true
+      },
+      "permission": {
+        "bash": "deny",
+        "skill": {
+          "*": "deny"
+        }
+      }
+    },
+
+    "webresearcher": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "tools": {
+        "firecrawl_firecrawl_search": true,
+        "firecrawl_firecrawl_search_feedback": true,
+        "firecrawl_firecrawl_scrape": true,
+        "firecrawl_firecrawl_map": true,
+        "firecrawl_firecrawl_agent": true,
+        "firecrawl_firecrawl_agent_status": true
+      },
+      "permission": {
+        "bash": "deny",
+        "skill": {
+          "*": "deny"
+        }
+      }
+    },
+
+    "webmonitor": {
+      "model": "anthropic/claude-haiku-4-5",
+      "tools": {
+        "firecrawl_firecrawl_monitor_create": true,
+        "firecrawl_firecrawl_monitor_get": true,
+        "firecrawl_firecrawl_monitor_list": true,
+        "firecrawl_firecrawl_monitor_update": true,
+        "firecrawl_firecrawl_monitor_delete": true,
+        "firecrawl_firecrawl_monitor_run": true,
+        "firecrawl_firecrawl_monitor_checks": true,
+        "firecrawl_firecrawl_monitor_check": true
+      },
+      "permission": {
+        "bash": "deny",
+        "skill": {
+          "*": "deny"
+        }
+      }
+    },
+
+    "cloudflare": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "permission": {
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "cloudflare": "allow",
+          "wrangler": "allow",
+          "workers-best-practices": "allow",
+          "durable-objects": "allow",
+          "agents-sdk": "allow",
+          "sandbox-sdk": "allow",
+          "cloudflare-email-service": "allow",
+          "turnstile-spin": "allow",
+          "web-perf": "allow"
+        }
+      }
+    },
+
+    "frontend": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "permission": {
+        "task": "allow",
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "brainstorming": "allow",
+          "writing-plans": "allow",
+          "executing-plans": "allow",
+          "subagent-driven-development": "allow",
+          "dispatching-parallel-agents": "allow",
+          "test-driven-development": "allow",
+          "systematic-debugging": "allow",
+          "verification-before-completion": "allow",
+          "requesting-code-review": "allow",
+          "receiving-code-review": "allow",
+          "using-git-worktrees": "allow",
+          "finishing-a-development-branch": "allow",
+          "frontend-design": "allow",
+          "shadcn-ui": "allow",
+          "web-artifacts-builder": "allow",
+          "canvas-design": "allow",
+          "algorithmic-art": "allow",
+          "brand-guidelines": "allow",
+          "theme-factory": "allow",
+          "slack-gif-creator": "allow",
+          "webapp-testing": "allow"
+        }
+      }
+    },
+
+    "stitch": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "permission": {
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "stitch::*": "allow",
+          "remotion": "allow",
+          "react:components": "allow",
+          "shadcn-ui": "allow",
+          "design-md": "allow",
+          "enhance-prompt": "allow",
+          "stitch-loop": "allow",
+          "taste-design": "allow"
+        }
+      }
+    },
+
+    "writer": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "permission": {
+        "task": "allow",
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "brainstorming": "allow",
+          "doc-coauthoring": "allow",
+          "internal-comms": "allow",
+          "docx": "allow",
+          "pptx": "allow",
+          "pdf": "allow"
+        }
+      }
+    },
+
+    "skill-smith": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "permission": {
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "skill-creator": "allow",
+          "writing-skills": "allow",
+          "mcp-builder": "allow"
+        }
+      }
+    }
+  },
+
+  "mcp": {
+
+    "playwright": {
+      "type": "local",
+      "command": ["npx", "-y", "@playwright/mcp@latest"]
+    },
+
+    "context7": {
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "{file:secrets/context7.key}"
+      },
+      "enabled": true
+    },
+
+    "github": {
+      "type": "local",
+      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
+      "enabled": false,
+      "environment": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "{file:secrets/github.pat}"
+      }
+    },
+
+    "pdf-reader": {
+      "type": "local",
+      "command": ["npx", "-y", "@sylphx/pdf-reader-mcp"],
+      "enabled": false
+    },
+
+    "chrome-devtools": {
+      "type": "local",
+      "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
+      "enabled": true
+    },
+
+    "dart-mcp-server": {
+      "type": "local",
+      "command": ["dart", "mcp-server"],
+      "enabled": false,
+      "environment": {}
+    },
+
+    "homeassistant": {
+      "type": "remote",
+      "url": "{file:secrets/homeassistant.url}",
+      "enabled": true,
+      "oauth": false,
+      "headers": {
+        "Authorization": "Bearer {file:secrets/homeassistant.token}"
+      }
+    },
+
+    "firecrawl": {
+      "type": "local",
+      "command": ["npx", "-y", "firecrawl-mcp"],
+      "enabled": true,
+      "environment": {
+        "FIRECRAWL_API_URL": "{file:secrets/firecrawl.url}"
+      }
+    }
+
+  }
+
+}
