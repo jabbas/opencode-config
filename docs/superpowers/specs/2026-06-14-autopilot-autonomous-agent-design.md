@@ -13,13 +13,28 @@ użytkownik może go uruchomić; żaden inny agent nie może go odpalić dyspozy
 
 | Wymiar | Decyzja |
 |---|---|
-| Domena | Cokolwiek; orkiestrator + proste robi sam (hybryda) |
+| Domena | Cokolwiek |
 | Bezpieczeństwo | Autonomia; **twardy STOP** tylko przy operacjach nieodwracalnych/niebezpiecznych |
 | Niejednoznaczność | Research → rozsądne założenia + dokumentuj → **STOP** tylko gdy nieusuwalna |
-| Weryfikacja | TDD + self-review + verification-before-completion **oraz** niezależny przegląd drugim agentem |
-| Wykonanie | Orkiestrator (deleguje przy przekraczaniu domen), proste robi sam |
+| Weryfikacja | subagenci stosują TDD/self-review; autopilot zleca **niezależny przegląd** innemu subagentowi i decyduje o „gotowe" (verification-before-completion) |
+| Wykonanie | **Czysty orkiestrator** — opus MYŚLI, subagenci (sonnet i in.) WYKONUJĄ |
 | Przebieg | Foreground (na żywo) + **zawsze plik-audyt** (plan + raport) |
 | Uruchamianie | **Tylko użytkownik** — `mode: "primary"` (niewywoływalny przez Task) |
+
+### Podział pracy: opus myśli, subagenci wykonują (KLUCZOWE)
+
+`autopilot` (opus) jest **wyłącznie mózgiem**: rozumie zadanie, projektuje,
+planuje, decyduje, ocenia wyniki, raportuje. **Nigdy nie wykonuje sam** — żadnego
+pisania kodu, edycji plików projektu, uruchamiania testów/buildów ani operacji
+systemowych. **Całe wykonanie deleguje do subagentów** (sonnet: `@coder`,
+`@frontend`, `@devops`, `@writer`, `@cloudflare`, `@general`; diagnoza: `@debugger`).
+
+Egzekwowane mechanicznie: `autopilot` ma `bash: deny` i `edit: deny`. Może tylko
+czytać (zrozumieć kontekst), pisać **własne artefakty** (plan/raport) i delegować
+(`task: allow`). Nie da się więc „przemycić" wykonania do opusa.
+
+Uzasadnienie: (1) separacja myślenia od działania — czystsze decyzje, lepsza
+kontrola; (2) koszt — drogi opus tylko do rozumowania, tani sonnet do bulk-roboty.
 
 **Dwa jedyne punkty interakcji:** (1) ryzyko nieodwracalne, (2) nieusuwalna
 niejednoznaczność. Poza tym pełna autonomia.
@@ -41,12 +56,16 @@ przerwij, podsumuj, poproś o potwierdzenie — nie wykonuj bez zgody.
                → nieusuwalna niejasność → STOP + zapytaj użytkownika
                → zapisz design jako artefakt
 3. ZAPLANUJ  → writing-plans → plan jako plik; sam wybierasz tryb wykonania
-4. WYKONAJ   → proste: sam; złożone/cudza domena: deleguj specjaliście
-               → operacja nieodwracalna → STOP + zapytaj
-               → TDD, częste commity, izolacja (worktree/branch)
-5. ZWERYFIKUJ→ testy, self-review, verification-before-completion
-               → niezależny przegląd (@debugger / code-review skille)
-6. RAPORTUJ  → plik-audyt: co zrobiono, ZAŁOŻENIA, weryfikacja, STOP-y
+4. WYKONAJ   → DELEGUJ całość do subagentów (sonnet): @coder/@frontend/@devops…
+               → przekaż w pełni doprecyzowane zadania (z planu)
+               → instruuj subagentów: TDD, częste commity, izolacja (worktree)
+               → operacja nieodwracalna → STOP + zapytaj (zanim zlecisz)
+               → autopilot SAM nie pisze/nie uruchamia — tylko koordynuje
+5. ZWERYFIKUJ→ oceń raporty subagentów; zleć niezależny przegląd innemu
+               subagentowi (@debugger / @coder code-review); DECYDUJ czy „gotowe"
+               (verification-before-completion na poziomie decyzji)
+6. RAPORTUJ  → plik-audyt (autopilot pisze sam): co zrobiono, ZAŁOŻENIA,
+               wyniki weryfikacji, STOP-y, którzy subagenci co wykonali
 ```
 
 ### Dlaczego nie wywołuje wprost skilla `brainstorming`
@@ -63,19 +82,24 @@ Wartość brainstormingu (design-przed-budową, alternatywy, YAGNI) zachowana w 
 ### Agent `agents/autopilot.md`
 
 - **Model:** opus (mocne rozumowanie do decyzji/orkiestracji)
-- **Narzędzia:** pełne (read/write/edit/bash/glob/grep)
+- **Narzędzia:** `read`, `glob`, `grep` (zrozumienie kontekstu) + `write`
+  (TYLKO własne artefakty: plan/raport). **`bash: deny`, `edit: deny`** —
+  mechaniczna gwarancja, że opus nie wykonuje (nie mutuje kodu, nie uruchamia).
 - **`mode: "primary"`** — KLUCZOWE: wyklucza go z listy Task u wszystkich agentów
   (`registry.ts:253` filtruje `item.mode !== "primary"`), więc żaden agent nie
   uruchomi go automatycznie; uruchamia wyłącznie użytkownik. Jednocześnie sam
   może delegować do subagentów.
 - **`permission.task: "allow"`** — by mógł delegować do specjalistów
   (`@coder`, `@frontend`, itd.).
-- **Whitelist skilli:** `autonomous-execution`, `using-superpowers`,
-  `writing-plans`, `test-driven-development`, `verification-before-completion`,
-  `requesting-code-review`, `receiving-code-review`,
+- **Whitelist skilli (lekka — tylko orkiestracja/myślenie):**
+  `autonomous-execution`, `using-superpowers`, `writing-plans`,
   `subagent-driven-development`, `dispatching-parallel-agents`,
-  `using-git-worktrees`, `finishing-a-development-branch`, `systematic-debugging`.
+  `verification-before-completion`, `requesting-code-review`.
   **Bez `brainstorming`** (myślenie wbudowane w `autonomous-execution`).
+  Skille wykonawcze (`test-driven-development`, `using-git-worktrees`,
+  `finishing-a-development-branch`, `systematic-debugging`, code-review-doing)
+  należą do **subagentów** (`@coder` itd. już je mają) — autopilot ich nie ładuje,
+  tylko zleca subagentom ich użycie.
 
 ### Skill `autonomous-execution`
 
