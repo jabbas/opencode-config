@@ -1,0 +1,15 @@
+[submodule "anthropics-skills"]
+	path = anthropics-skills
+	url = https://github.com/anthropics/skills.git
+[submodule "cloudflare-skills"]
+	path = cloudflare-skills
+	url = https://github.com/cloudflare/skills.git
+[submodule "stitch-skills"]
+	path = stitch-skills
+	url = https://github.com/google-labs-code/stitch-skills.git
+[submodule "awesome-agent-skills"]
+	path = awesome-agent-skills
+	url = https://github.com/VoltAgent/awesome-agent-skills.git
+[submodule "superpowers"]
+	path = superpowers
+	url = https://github.com/obra/superpowers.git
