@@ -85,12 +85,21 @@ Wartość brainstormingu (design-przed-budową, alternatywy, YAGNI) zachowana w 
 - **Narzędzia:** `read`, `glob`, `grep` (zrozumienie kontekstu) + `write`
   (TYLKO własne artefakty: plan/raport). **`bash: deny`, `edit: deny`** —
   mechaniczna gwarancja, że opus nie wykonuje (nie mutuje kodu, nie uruchamia).
-- **`mode: "primary"`** — KLUCZOWE: wyklucza go z listy Task u wszystkich agentów
-  (`registry.ts:253` filtruje `item.mode !== "primary"`), więc żaden agent nie
-  uruchomi go automatycznie; uruchamia wyłącznie użytkownik. Jednocześnie sam
-  może delegować do subagentów.
-- **`permission.task: "allow"`** — by mógł delegować do specjalistów
-  (`@coder`, `@frontend`, itd.).
+- **`mode: "primary"`** — wyklucza go z **reklamowanej** listy Task
+  (`registry.ts:253` filtruje `item.mode !== "primary"`), więc agenci go nie
+  „widzą". UWAGA: to tylko UKRYWA — `task.ts:116` pobiera agenta po nazwie BEZ
+  sprawdzania `mode`, więc samo `mode:primary` NIE blokuje wywołania po nazwie.
+  Twardą barierę daje warstwa `task`-deny (poniżej). Uruchamia go wyłącznie
+  użytkownik (wybór agenta sesji); sam może delegować do subagentów.
+- **Bariera „nikt nie odpali autopilota" (defense-in-depth):**
+  (1) **root** `permission.task: { "autopilot": "deny" }` — łapie build/plan/explore
+  i każdego bez własnej reguły task; (2) **per-agent** u wszystkich delegujących
+  (`coder`, `general`, `architect`, `devops`, `frontend`, `writer`, `autopilot`)
+  `task: { "*": "allow", "autopilot": "deny" }` — bo per-agentowe `task:allow`
+  nadpisałoby root-deny przez `findLast`. Razem: `evaluate("task","autopilot")` =
+  deny dla KAŻDEGO agenta; delegacja do pozostałych agentów działa normalnie.
+- **`permission.task` u autopilota:** `{ "*": "allow", "autopilot": "deny" }` — może
+  delegować do specjalistów, ale nie do samego siebie (brak rekurencji).
 - **Whitelist skilli (lekka — tylko orkiestracja/myślenie):**
   `autonomous-execution`, `using-superpowers`, `writing-plans`,
   `subagent-driven-development`, `dispatching-parallel-agents`,
@@ -121,7 +130,10 @@ szczegółowe specyfikacje zadań).
 - STOP-y respektują Global Hard Rules (AGENTS.md/global-rules.md).
 - Domyślnie praca w izolacji (worktree/branch) — zmiany odwracalne aż do
   integracji.
-- `mode: primary` zapobiega kaskadom „autonomiczny odpala autonomicznego".
+- Bariera `task`-deny (root + per-agent) zapobiega odpaleniu autopilota przez
+  jakiegokolwiek agenta — w tym kaskadom „autonomiczny odpala autonomicznego"
+  (autopilot ma `autopilot:deny` u siebie). `mode:primary` to dodatkowo ukrywa go
+  z list, ale to bariera `task` egzekwuje (nie samo `mode`).
 
 ## Weryfikacja (po implementacji)
 
