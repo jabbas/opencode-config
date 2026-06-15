@@ -70,6 +70,26 @@
       }
     },
 
+    "autopilot": {
+      "model": "anthropic/claude-opus-4-8",
+      "mode": "primary",
+      "permission": {
+        "bash": "deny",
+        "edit": "deny",
+        "task": "allow",
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "autonomous-execution": "allow",
+          "writing-plans": "allow",
+          "subagent-driven-development": "allow",
+          "dispatching-parallel-agents": "allow",
+          "verification-before-completion": "allow",
+          "requesting-code-review": "allow"
+        }
+      }
+    },
+
     "coder": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
