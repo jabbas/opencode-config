@@ -19,6 +19,7 @@
 
   "permission": {
     "edit": "ask",
+    "task": { "autopilot": "deny" },
     "bash": {
       "*": "ask",
       "cat *": "allow",
@@ -76,7 +77,7 @@
       "permission": {
         "bash": "deny",
         "edit": "deny",
-        "task": "allow",
+        "task": { "*": "allow", "autopilot": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -93,7 +94,7 @@
     "coder": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
-        "task": "allow",
+        "task": { "*": "allow", "autopilot": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -117,7 +118,7 @@
 
     "general": {
       "permission": {
-        "task": "allow",
+        "task": { "*": "allow", "autopilot": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -145,7 +146,7 @@
       "model": "anthropic/claude-opus-4-8",
       "permission": {
         "bash": "deny",
-        "task": "allow",
+        "task": { "*": "allow", "autopilot": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -183,7 +184,7 @@
     "devops": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
-        "task": "allow",
+        "task": { "*": "allow", "autopilot": "deny" },
         "bash": {
           "*": "ask",
           "git log *": "allow",
@@ -329,7 +330,7 @@
     "frontend": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
-        "task": "allow",
+        "task": { "*": "allow", "autopilot": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -379,7 +380,7 @@
     "writer": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
-        "task": "allow",
+        "task": { "*": "allow", "autopilot": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
