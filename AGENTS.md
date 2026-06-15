@@ -38,6 +38,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 | `general` | `claude-sonnet-4-6` | General-purpose fallback; software + DevOps (default: `agents/default.md`) |
 | `coder` | `claude-sonnet-4-6` | Polyglot code — Go, Python, TypeScript, Shell |
 | `architect` | `claude-opus-4-8` | Software/system architecture, ADRs, design, plans (bash: deny; ZLECA → delegates) |
+| `autopilot` | `claude-opus-4-8` | User-only autonomous orchestrator; opus thinks, subagents execute; `mode: primary` (no agent can dispatch it); bash/edit: deny |
 | `debugger` | `claude-opus-4-8` | Full-stack debugging, diagnosis only |
 | `devops` | `claude-sonnet-4-6` | CI/CD, GitHub, Flux, Helm, Kustomize, git ops |
 | `ha` | `claude-sonnet-4-6` | Home Assistant — query entities, control devices |
