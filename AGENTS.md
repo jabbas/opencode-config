@@ -38,7 +38,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 | `general` | `claude-sonnet-4-6` | General-purpose fallback; software + DevOps (default: `agents/default.md`) |
 | `coder` | `claude-sonnet-4-6` | Polyglot code — Go, Python, TypeScript, Shell |
 | `architect` | `claude-opus-4-8` | Software/system architecture, ADRs, design, plans (bash: deny; ZLECA → delegates) |
-| `autopilot` | `claude-opus-4-8` | User-only autonomous orchestrator; opus thinks, subagents execute; bash/edit: deny. Not dispatchable by any agent — `mode: primary` (hides it) + `task: {autopilot: deny}` on root & all delegating agents (enforces it) |
+| `autopilot` | `claude-opus-4-8` | User-only autonomous orchestrator; opus thinks, subagents execute. `bash: deny`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it) + `task: {autopilot: deny}` on root & all delegating agents (enforces it) |
 | `debugger` | `claude-opus-4-8` | Full-stack debugging, diagnosis only |
 | `devops` | `claude-sonnet-4-6` | CI/CD, GitHub, Flux, Helm, Kustomize, git ops |
 | `ha` | `claude-sonnet-4-6` | Home Assistant — query entities, control devices |
