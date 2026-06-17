@@ -83,8 +83,14 @@ Wartość brainstormingu (design-przed-budową, alternatywy, YAGNI) zachowana w 
 
 - **Model:** opus (mocne rozumowanie do decyzji/orkiestracji)
 - **Narzędzia:** `read`, `glob`, `grep` (zrozumienie kontekstu) + `write`
-  (TYLKO własne artefakty: plan/raport). **`bash: deny`, `edit: deny`** —
-  mechaniczna gwarancja, że opus nie wykonuje (nie mutuje kodu, nie uruchamia).
+  (TYLKO własne artefakty pod `docs/superpowers/`). **`bash: deny`** (nie
+  uruchamia) + **`edit: { "*": "deny", "docs/superpowers/**": "allow" }`**.
+  WAŻNE: narzędzie `write` jest bramkowane uprawnieniem **`edit`** (`write.ts:54`
+  woła `ctx.ask({permission:"edit", patterns:[relPath]})`) — dlatego carve-out na
+  `edit` egzekwuje OBA naraz: mechanicznie blokuje tworzenie/edycję kodu
+  gdziekolwiek, a pozwala zapisać artefakty tylko pod `docs/superpowers/`.
+  (Samo `edit:"deny"` blokowałoby też zapis artefaktów — autopilot mógł je zapisać
+  w smoke teście wyłącznie dzięki `--dangerously-skip-permissions`.)
 - **`mode: "primary"`** — wyklucza go z **reklamowanej** listy Task
   (`registry.ts:253` filtruje `item.mode !== "primary"`), więc agenci go nie
   „widzą". UWAGA: to tylko UKRYWA — `task.ts:116` pobiera agenta po nazwie BEZ
@@ -150,5 +156,8 @@ szczegółowe specyfikacje zadań).
 - Brak trybu background (na razie foreground) — można dodać później.
 - Brak checkpointów na żywo (tylko raport końcowy + plik-audyt).
 - Brak osobnego wariantu `brainstorming-autonomous` (myślenie wbudowane w skill).
-- Brak redundantnego `task:{autopilot:deny}` u innych agentów — `mode:primary`
-  już to egzekwuje.
+
+> SPROSTOWANIE (poprzednia wersja tego specu błędnie zakładała, że
+> `mode:primary` sam egzekwuje niewywoływalność i że per-agent `task:deny` jest
+> zbędny). Faktycznie per-agent + root `task:{autopilot:deny}` SĄ konieczne i
+> wdrożone (patrz „Bariera" wyżej) — `mode:primary` tylko ukrywa, nie blokuje.
