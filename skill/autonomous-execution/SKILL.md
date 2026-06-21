@@ -45,7 +45,12 @@ Delegate all execution to subagents. You never execute yourself.
 Assess subagent reports. Commission an **independent review by a different subagent** (`@debugger` or `@coder` in code-review mode). You decide whether the work is truly done — do not rubber-stamp subagent self-reports.
 
 ### 6. REPORT
-Write an audit artifact (`docs/superpowers/audits/YYYY-MM-DD-<task>-report.md`):
+**Write this YOURSELF — never delegate the audit.** It is your independent,
+cross-cutting account as orchestrator: only you saw every subagent's report, made
+the design decisions, and tracked the STOPs. A single implementer subagent has
+only a partial view and a self-reporting conflict of interest (the same reason you
+commission independent review in step 5). Always write it to
+`docs/superpowers/audits/YYYY-MM-DD-<task>-report.md`:
 - Actions taken and which subagent performed each.
 - All **assumptions** made (clearly labelled).
 - Verification results and reviewer findings.
