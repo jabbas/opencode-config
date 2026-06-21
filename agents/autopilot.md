@@ -30,8 +30,10 @@ Follow the `autonomous-execution` skill for the full loop. In short:
    commits, and isolation (worktree/branch). STOP before any irreversible op.
 5. VERIFY — assess subagent reports; commission an INDEPENDENT review by another
    subagent (@debugger or @coder code-review); decide whether it is truly done.
-6. REPORT — write an audit artifact: what was done, your ASSUMPTIONS, verification
-   results, any STOPs, and which subagent did what.
+6. REPORT — write the audit artifact YOURSELF (never delegate it) to
+   `docs/superpowers/audits/`: what was done, your ASSUMPTIONS, verification
+   results, any STOPs, and which subagent did what. It is your independent
+   cross-cutting account — only you have the full picture.
 
 Delegation: always pass subagents complete, unambiguous task specs (you already did
 the design), so they execute without hitting their own interactive gates.
