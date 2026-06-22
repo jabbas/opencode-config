@@ -404,6 +404,34 @@
           "mcp-builder": "allow"
         }
       }
+    },
+
+    "jira": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "tools": {
+        "jira_*": true
+      },
+      "permission": {
+        "bash": "deny",
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow"
+        }
+      }
+    },
+
+    "stitch-mcp": {
+      "model": "anthropic/claude-sonnet-4-6",
+      "tools": {
+        "stitch_*": true
+      },
+      "permission": {
+        "bash": "deny",
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow"
+        }
+      }
     }
   },
 
