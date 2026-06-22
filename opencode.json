@@ -45,6 +45,8 @@
     "homeassistant_*": false,
     "chrome-devtools_*": false,
     "firecrawl_*": false,
+    "jira_*": false,
+    "stitch_*": false,
     "webfetch": false,
     "WebFetch": false
   },
@@ -464,8 +466,30 @@
       "command": ["npx", "-y", "firecrawl-mcp"],
       "enabled": true,
       "environment": {
-        "FIRECRAWL_API_URL": "{file:secrets/firecrawl.url}"
+        "FIRECRAWL_API_URL": "{file:secrets/firecrawl.url}",
+        "FIRECRAWL_API_KEY": "{file:secrets/firecrawl.key}"
       }
+    },
+
+    "jira": {
+      "type": "local",
+      "command": [
+        "mcp-atlassian",
+        "--jira-url",
+        "{file:secrets/jira.url}",
+        "--jira-personal-token",
+        "{file:secrets/jira.token}"
+      ],
+      "enabled": true
+    },
+
+    "stitch": {
+      "type": "local",
+      "command": ["npx", "-y", "@_davideast/stitch-mcp", "proxy"],
+      "environment": {
+        "STITCH_API_KEY": "{file:secrets/stitch.key}"
+      },
+      "enabled": true
     }
 
   }
