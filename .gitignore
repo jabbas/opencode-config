@@ -14,3 +14,10 @@ session-*.md
 
 # OS junk
 .DS_Store
+
+# Per-machine config layer (loaded via OPENCODE_CONFIG)
+opencode.local.json
+
+# direnv
+.envrc
+.direnv/
