@@ -19,6 +19,28 @@ changes.** It has the code style, naming conventions, build/test commands, full
 repo layout, and error-handling patterns. Non-editing tasks (queries, web ops,
 home automation) do not need it.
 
+## Model Layer & Machine Portability
+
+This config is shared verbatim between the private and work machines. The shared
+`opencode.json` contains NO `model`, `small_model`, or machine-specific `provider`
+block. Those live in a per-machine `opencode.local.json` (gitignored), which
+OpenCode deep-merges on top of the base via the `OPENCODE_CONFIG` env var.
+
+- **Defaults:** `opencode.local.json` sets `model` = sonnet and `small_model` =
+  haiku.
+- **Per-agent override:** only `architect` and `debugger` get
+  `claude-opus-4-8` (the "thinking" role) via `agent.<name>.model` in the local
+  layer. Everyone else inherits the global sonnet. To change a model for one
+  agent, edit one line in `opencode.local.json`.
+- **Providers:** machine-specific providers (e.g. work's `work-provider`/`kilocode`)
+  go in the local layer's `provider` block, not in `opencode.json`.
+- **Loading:** `.envrc` (direnv) exports
+  `OPENCODE_CONFIG="$PWD/opencode.local.json"` on entering the config dir. Run
+  `direnv allow .` once per machine. Without direnv, export `OPENCODE_CONFIG`
+  manually (absolute path to `opencode.local.json`).
+- **Secrets:** all URLs/keys use `{file:secrets/*}`, which resolves relative to
+  the config dir, so the same `opencode.json` reads each machine's own secrets.
+
 ## Repository Layout
 
 This is the OpenCode global config repo (`~/.config/opencode`): `opencode.json`
@@ -51,6 +73,8 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 | `stitch` | `claude-sonnet-4-6` | Google Stitch design→code |
 | `writer` | `claude-sonnet-4-6` | Documentation, specs, internal comms; docx/pptx/pdf (ZAPISUJE) |
 | `skill-smith` | `claude-sonnet-4-6` | Create/edit skills, build MCP servers |
+| `jira` | `claude-sonnet-4-6` | Jira issue tracking via `jira_*` MCP (bash: deny) |
+| `stitch-mcp` | `claude-sonnet-4-6` | Google Stitch UI design via `stitch_*` MCP (bash: deny; separate from skill-driven `stitch`) |
 
 - `plan` agent is defined in `opencode.json` only (read-only: no bash/edit/write tools).
 - `websearch` was removed — curl/wget is covered by any bash-enabled agent; readable web content via `@webscraper`.
