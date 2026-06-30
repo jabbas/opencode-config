@@ -63,6 +63,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 | `autopilot` | `claude-opus-4-8` | User-only autonomous orchestrator; opus thinks, subagents execute. `bash: deny`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it) + `task: {autopilot: deny}` on root & all delegating agents (enforces it) |
 | `debugger` | `claude-opus-4-8` | Full-stack debugging, diagnosis only |
 | `devops` | `claude-sonnet-4-6` | CI/CD, GitHub, Flux, Helm, Kustomize, git ops |
+| `jenkins` | `claude-sonnet-4-6` | Jenkins controller ops via the `jk` CLI — jobs, runs, logs, config.xml, artifacts, credentials, nodes, plugins. Owns the `jk` skill; all other agents delegate Jenkins actions here |
 | `ha` | `claude-sonnet-4-6` | Home Assistant — query entities, control devices |
 | `webdebugger` | `claude-sonnet-4-6` | Browser testing, UI verification via Playwright + Chrome DevTools |
 | `webscraper` | `claude-haiku-4-5` | Extract web content via Firecrawl (bash: deny) |
@@ -79,6 +80,12 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 - `plan` agent is defined in `opencode.json` only (read-only: no bash/edit/write tools).
 - `websearch` was removed — curl/wget is covered by any bash-enabled agent; readable web content via `@webscraper`.
 
+## Delegation Rules (All Agents)
+
+These apply to every agent (this file is injected globally via `Instruction.system`):
+
+- **Jenkins → `@jenkins`.** Any Jenkins controller action — builds/runs, logs, jobs, `config.xml`, artifacts, test reports, credentials, nodes, queues, plugins — goes to `@jenkins`. Do NOT run the `jk` CLI yourself; the `jk` skill is denied to every agent except `jenkins`.
+
 ## Per-Agent Skill Whitelists (token optimization)
 
 Each agent's visible skills are restricted via `permission.skill` in
@@ -87,7 +94,7 @@ Each agent's visible skills are restricted via `permission.skill` in
 skill is hidden from `<available_skills>` AND blocked from invocation; `allow`/`ask`
 both keep it on the list at full cost (verified: `skill/index.ts:314`,
 `permission/index.ts:86`). **Missing skill → delegate** to the owning specialist
-(`@frontend`, `@stitch`, `@writer`, `@cloudflare`, `@skill-smith`); delegating
+(`@frontend`, `@stitch`, `@writer`, `@cloudflare`, `@jenkins`, `@skill-smith`); delegating
 agents (`general`, `coder`, `architect`, `devops`, `frontend`, `writer`) have
 explicit `"task": "allow"` so delegation works even as a subagent.
 

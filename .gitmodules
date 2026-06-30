@@ -13,3 +13,6 @@
 [submodule "superpowers"]
 	path = superpowers
 	url = https://github.com/obra/superpowers.git
+[submodule "jenkins-cli"]
+	path = jenkins-cli
+	url = https://github.com/avivsinai/jenkins-cli.git

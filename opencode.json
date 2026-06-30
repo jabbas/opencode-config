@@ -230,6 +230,43 @@
         }
       }
     },
+    "jenkins": {
+      "permission": {
+        "bash": {
+          "*": "ask",
+          "jk --version": "allow",
+          "jk version *": "allow",
+          "jk auth status*": "allow",
+          "jk context ls*": "allow",
+          "jk search *": "allow",
+          "jk job ls*": "allow",
+          "jk job view *": "allow",
+          "jk job config *": "allow",
+          "jk run ls *": "allow",
+          "jk run view *": "allow",
+          "jk run params *": "allow",
+          "jk run search *": "allow",
+          "jk log *": "allow",
+          "jk artifact ls *": "allow",
+          "jk test report *": "allow",
+          "jk cred ls*": "allow",
+          "jk node ls*": "allow",
+          "jk queue ls*": "allow",
+          "jk plugin ls*": "allow"
+        },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "jk": "allow",
+          "systematic-debugging": "allow",
+          "verification-before-completion": "allow"
+        }
+      }
+    },
     "webdebugger": {
       "model": "anthropic/claude-sonnet-4-6",
       "tools": {
