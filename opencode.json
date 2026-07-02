@@ -163,6 +163,10 @@
     },
     "debugger": {
       "permission": {
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "bash": {
           "*": "ask",
           "kubectl get *": "allow",
@@ -268,6 +272,10 @@
         "chrome-devtools_*": true
       },
       "permission": {
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -283,6 +291,10 @@
         "homeassistant_*": true
       },
       "permission": {
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow"
@@ -300,6 +312,10 @@
       },
       "permission": {
         "bash": "deny",
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny"
         }
@@ -316,6 +332,10 @@
       },
       "permission": {
         "bash": "deny",
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny"
         }
@@ -334,6 +354,10 @@
       },
       "permission": {
         "bash": "deny",
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny"
         }
@@ -341,6 +365,10 @@
     },
     "cloudflare": {
       "permission": {
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -391,6 +419,10 @@
     },
     "stitch": {
       "permission": {
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -425,6 +457,10 @@
     },
     "skill-smith": {
       "permission": {
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -440,6 +476,10 @@
       },
       "permission": {
         "bash": "deny",
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow"
@@ -452,6 +492,10 @@
       },
       "permission": {
         "bash": "deny",
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow"

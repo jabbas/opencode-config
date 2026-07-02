@@ -84,6 +84,14 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 
 These apply to every agent (this file is injected globally via `Instruction.system`):
 
+- **Any agent may delegate to any other agent, except `autopilot` can never be
+  called.** Every agent carries an explicit `task: {"*": "allow", "autopilot":
+  "deny"}` in `opencode.json`. The explicit rule is required because of
+  `subagent-permissions.ts` (`deriveSubagentSessionPermission`): when an agent runs
+  **as a subagent**, opencode injects `task: {"*": "deny"}` UNLESS the agent's own
+  ruleset already contains a `task` rule (`canTask`). So the explicit block is what
+  keeps delegation working at any nesting depth. `autopilot` stays excluded
+  everywhere (it is also `mode: primary`, so it is never dispatchable).
 - **Jenkins → `@jenkins`.** Any Jenkins controller action — builds/runs, logs, jobs, `config.xml`, artifacts, test reports, credentials, nodes, queues, plugins — goes to `@jenkins`. Do NOT run the `jk` CLI yourself; the `jk` skill is denied to every agent except `jenkins`.
 
 ## Per-Agent Skill Whitelists (token optimization)
@@ -94,14 +102,17 @@ Each agent's visible skills are restricted via `permission.skill` in
 skill is hidden from `<available_skills>` AND blocked from invocation; `allow`/`ask`
 both keep it on the list at full cost (verified: `skill/index.ts:314`,
 `permission/index.ts:86`). **Missing skill → delegate** to the owning specialist
-(`@frontend`, `@stitch`, `@writer`, `@cloudflare`, `@jenkins`, `@skill-smith`); delegating
-agents (`general`, `coder`, `architect`, `devops`, `frontend`, `writer`) have
-explicit `"task": "allow"` so delegation works even as a subagent.
+(`@frontend`, `@stitch`, `@writer`, `@cloudflare`, `@jenkins`, `@skill-smith`). **Every**
+agent carries an explicit `task: {"*": "allow", "autopilot": "deny"}` so delegation
+works even when the agent is itself running as a subagent (see "Delegation Rules"
+above for the `canTask` mechanism).
 
 Pure MCP operators (`webscraper`, `webresearcher`, `webmonitor`) intentionally
 have zero skills (`{"*": "deny"}`) — no `using-superpowers` either. This is
-deliberate: they are single-purpose Firecrawl operators that don't code or
-delegate, so any skill would be dead weight. Do not "fix" this by adding skills.
+deliberate: they are single-purpose Firecrawl operators that don't code, so any
+skill would be dead weight. Do not "fix" this by adding skills. They DO still carry
+the standard `task` delegation rule, so they can hand off to another agent if a job
+falls outside scraping/research/monitoring.
 
 Full rationale, ownership map, and per-agent skill lists:
 `docs/superpowers/specs/2026-06-13-agent-skill-optimization-design.md`.
