@@ -51,7 +51,7 @@ edit one line** in that file:
 }
 ```
 
-Machine-specific providers (e.g. work's `work-provider` / `kilocode`) go in the
+Machine-specific providers (e.g. a work-only gateway such as `kilocode`) go in the
 `provider` block here — never in `opencode.json`.
 
 ---

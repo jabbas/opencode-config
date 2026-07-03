@@ -32,8 +32,8 @@ OpenCode deep-merges on top of the base via the `OPENCODE_CONFIG` env var.
   `claude-opus-4-8` (the "thinking" role) via `agent.<name>.model` in the local
   layer. Everyone else inherits the global sonnet. To change a model for one
   agent, edit one line in `opencode.local.json`.
-- **Providers:** machine-specific providers (e.g. work's `work-provider`/`kilocode`)
-  go in the local layer's `provider` block, not in `opencode.json`.
+- **Providers:** machine-specific providers (e.g. a work-only gateway such as
+  `kilocode`) go in the local layer's `provider` block, not in `opencode.json`.
 - **Loading:** `.envrc` (direnv) exports
   `OPENCODE_CONFIG="$PWD/opencode.local.json"` on entering the config dir. Run
   `direnv allow .` once per machine. Without direnv, export `OPENCODE_CONFIG`

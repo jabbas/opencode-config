@@ -27,7 +27,7 @@ Authorization: Bearer <klucz>
 X-KiloCode-OrganizationId: <org-id>
 ```
 
-Klucz API: `~/.local/share/opencode/auth.json` (pole `.kilocode.key`). ID organizacji: `YOUR-ORG-UUID-HERE`.
+Klucz API: `~/.local/share/opencode/auth.json` (pole `.kilocode.key`). ID organizacji: `<your-org-id>`.
 
 ---
 
@@ -266,7 +266,7 @@ Przykład: `"kilocode/z-ai/glm-5.2"`, `"kilocode/deepseek/deepseek-v4-flash"`.
 ```bash
 curl -s https://api.kilo.ai/api/gateway/models \
   -H "Authorization: Bearer $(jq -r '.kilocode.key' ~/.local/share/opencode/auth.json)" \
-  -H "X-KiloCode-OrganizationId: YOUR-ORG-UUID-HERE" \
+  -H "X-KiloCode-OrganizationId: <your-org-id>" \
   | jq '.data[].id' | sort
 ```
 
