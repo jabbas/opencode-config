@@ -48,6 +48,7 @@
     "homeassistant_*": false,
     "chrome-devtools_*": false,
     "firecrawl_*": false,
+    "stitch_*": false,
     "webfetch": false,
     "WebFetch": false
   },
@@ -369,6 +370,9 @@
 
     "stitch": {
       "model": "anthropic/claude-sonnet-4-6",
+      "tools": {
+        "stitch_*": true
+      },
       "permission": {
         "task": { "*": "allow", "autopilot": "deny", "stitch": "deny" },
         "skill": {
@@ -478,6 +482,15 @@
       "enabled": true,
       "environment": {
         "FIRECRAWL_API_URL": "{file:secrets/firecrawl.url}"
+      }
+    },
+
+    "stitch": {
+      "type": "remote",
+      "url": "https://stitch.googleapis.com/mcp",
+      "enabled": true,
+      "headers": {
+        "X-Goog-Api-Key": "{file:secrets/stitch.key}"
       }
     }
 

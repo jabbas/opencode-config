@@ -12,6 +12,7 @@ This directory contains API keys and tokens referenced by `opencode.json` via `{
 | `homeassistant.url` | Home Assistant MCP endpoint URL (infrastructure — treated as secret) |
 | `firecrawl.url` | Firecrawl MCP API base URL (infrastructure — treated as secret) |
 | `alibaba-cloud.key` | Alibaba Cloud API key |
+| `stitch.key` | Google Stitch MCP API key (X-Goog-Api-Key) |
 
 ## Setup
 
@@ -24,6 +25,7 @@ printf '%s' 'your-jwt-here' > secrets/homeassistant.token
 printf '%s' 'https://ha.example.com/api/mcp' > secrets/homeassistant.url
 printf '%s' 'https://firecrawl.example.internal' > secrets/firecrawl.url
 printf '%s' 'your-key-here' > secrets/alibaba-cloud.key
+printf '%s' 'your-stitch-key-here' > secrets/stitch.key
 ```
 
 All files in this directory except `README.md` are gitignored.
