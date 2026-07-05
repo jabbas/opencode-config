@@ -62,6 +62,7 @@
         "write": false
       },
       "permission": {
+        "task": { "*": "allow", "autopilot": "deny", "plan": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -94,7 +95,7 @@
     "coder": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny" },
+        "task": { "*": "allow", "autopilot": "deny", "coder": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -118,7 +119,7 @@
 
     "general": {
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny" },
+        "task": { "*": "allow", "autopilot": "deny", "general": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -146,7 +147,7 @@
       "model": "anthropic/claude-opus-4-8",
       "permission": {
         "bash": "deny",
-        "task": { "*": "allow", "autopilot": "deny" },
+        "task": { "*": "allow", "autopilot": "deny", "architect": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -159,6 +160,7 @@
     "debugger": {
       "model": "anthropic/claude-opus-4-8",
       "permission": {
+        "task": { "*": "allow", "autopilot": "deny", "debugger": "deny" },
         "bash": {
           "*": "ask",
           "kubectl get *": "allow",
@@ -184,7 +186,7 @@
     "devops": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny" },
+        "task": { "*": "allow", "autopilot": "deny", "devops": "deny" },
         "bash": {
           "*": "ask",
           "git log *": "allow",
@@ -228,6 +230,7 @@
         "chrome-devtools_*": true
       },
       "permission": {
+        "task": { "*": "allow", "autopilot": "deny", "webdebugger": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -245,6 +248,7 @@
         "homeassistant_*": true
       },
       "permission": {
+        "task": { "*": "allow", "autopilot": "deny", "ha": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow"
@@ -263,6 +267,7 @@
         "firecrawl_firecrawl_interact_stop": true
       },
       "permission": {
+        "task": { "*": "allow", "autopilot": "deny", "webscraper": "deny" },
         "bash": "deny",
         "skill": {
           "*": "deny"
@@ -281,6 +286,7 @@
         "firecrawl_firecrawl_agent_status": true
       },
       "permission": {
+        "task": { "*": "allow", "autopilot": "deny", "webresearcher": "deny" },
         "bash": "deny",
         "skill": {
           "*": "deny"
@@ -301,6 +307,7 @@
         "firecrawl_firecrawl_monitor_check": true
       },
       "permission": {
+        "task": { "*": "allow", "autopilot": "deny", "webmonitor": "deny" },
         "bash": "deny",
         "skill": {
           "*": "deny"
@@ -311,6 +318,7 @@
     "cloudflare": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
+        "task": { "*": "allow", "autopilot": "deny", "cloudflare": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -330,7 +338,7 @@
     "frontend": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny" },
+        "task": { "*": "allow", "autopilot": "deny", "frontend": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -362,6 +370,7 @@
     "stitch": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
+        "task": { "*": "allow", "autopilot": "deny", "stitch": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -380,7 +389,7 @@
     "writer": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny" },
+        "task": { "*": "allow", "autopilot": "deny", "writer": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -397,6 +406,7 @@
     "skill-smith": {
       "model": "anthropic/claude-sonnet-4-6",
       "permission": {
+        "task": { "*": "allow", "autopilot": "deny", "skill-smith": "deny" },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
