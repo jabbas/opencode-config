@@ -74,7 +74,7 @@
     },
 
     "autopilot": {
-      "model": "anthropic/claude-opus-4-8",
+      "model": "anthropic/claude-opus-5",
       "mode": "primary",
       "permission": {
         "bash": "deny",
@@ -145,7 +145,7 @@
     },
 
     "architect": {
-      "model": "anthropic/claude-opus-4-8",
+      "model": "anthropic/claude-opus-5",
       "permission": {
         "bash": "deny",
         "task": { "*": "allow", "autopilot": "deny", "architect": "deny" },
@@ -153,13 +153,14 @@
           "*": "deny",
           "using-superpowers": "allow",
           "brainstorming": "allow",
-          "writing-plans": "allow"
+          "writing-plans": "allow",
+          "subagent-driven-development": "allow"
         }
       }
     },
 
     "debugger": {
-      "model": "anthropic/claude-opus-4-8",
+      "model": "anthropic/claude-opus-5",
       "permission": {
         "task": { "*": "allow", "autopilot": "deny", "debugger": "deny" },
         "bash": {
