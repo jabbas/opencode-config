@@ -35,22 +35,22 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 
 | Agent | Model | Purpose |
 |-------|-------|---------|
-| `general` | `claude-sonnet-4-6` | General-purpose fallback; software + DevOps (default: `agents/default.md`) |
-| `coder` | `claude-sonnet-4-6` | Polyglot code — Go, Python, TypeScript, Shell |
+| `general` | `claude-sonnet-5` | General-purpose fallback; software + DevOps (default: `agents/default.md`) |
+| `coder` | `claude-sonnet-5` | Polyglot code — Go, Python, TypeScript, Shell |
 | `architect` | `claude-opus-5` | Software/system architecture, ADRs, design, plans (bash: deny; ZLECA → delegates) |
 | `autopilot` | `claude-opus-5` | User-only autonomous orchestrator; opus thinks, subagents execute. `bash: deny`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it) + `task: {autopilot: deny}` on root & all delegating agents (enforces it) |
 | `debugger` | `claude-opus-5` | Full-stack debugging, diagnosis only |
-| `devops` | `claude-sonnet-4-6` | CI/CD, GitHub, Flux, Helm, Kustomize, git ops |
-| `ha` | `claude-sonnet-4-6` | Home Assistant — query entities, control devices |
-| `webdebugger` | `claude-sonnet-4-6` | Browser testing, UI verification via Playwright + Chrome DevTools |
+| `devops` | `claude-sonnet-5` | CI/CD, GitHub, Flux, Helm, Kustomize, git ops |
+| `ha` | `claude-sonnet-5` | Home Assistant — query entities, control devices |
+| `webdebugger` | `claude-sonnet-5` | Browser testing, UI verification via Playwright + Chrome DevTools |
 | `webscraper` | `claude-haiku-4-5` | Extract web content via Firecrawl (bash: deny) |
-| `webresearcher` | `claude-sonnet-4-6` | Search & synthesize web info via Firecrawl (bash: deny) |
+| `webresearcher` | `claude-sonnet-5` | Search & synthesize web info via Firecrawl (bash: deny) |
 | `webmonitor` | `claude-haiku-4-5` | Web page change tracking via Firecrawl (bash: deny) |
-| `cloudflare` | `claude-sonnet-4-6` | Cloudflare Workers/wrangler/Durable Objects/Pages |
-| `frontend` | `claude-sonnet-4-6` | UI build, components, visual/graphic work, generative art |
-| `stitch` | `claude-sonnet-4-6` | Google Stitch design→code |
-| `writer` | `claude-sonnet-4-6` | Documentation, specs, internal comms; docx/pptx/pdf (ZAPISUJE) |
-| `skill-smith` | `claude-sonnet-4-6` | Create/edit skills, build MCP servers |
+| `cloudflare` | `claude-sonnet-5` | Cloudflare Workers/wrangler/Durable Objects/Pages |
+| `frontend` | `claude-sonnet-5` | UI build, components, visual/graphic work, generative art |
+| `stitch` | `claude-sonnet-5` | Google Stitch design→code |
+| `writer` | `claude-sonnet-5` | Documentation, specs, internal comms; docx/pptx/pdf (ZAPISUJE) |
+| `skill-smith` | `claude-sonnet-5` | Create/edit skills, build MCP servers |
 
 - `plan` agent is defined in `opencode.json` only (read-only: no bash/edit/write tools).
 - `websearch` was removed — curl/wget is covered by any bash-enabled agent; readable web content via `@webscraper`.
