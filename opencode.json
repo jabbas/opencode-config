@@ -247,10 +247,18 @@
     "ha": {
       "model": "anthropic/claude-sonnet-4-6",
       "tools": {
-        "homeassistant_*": true
+        "homeassistant_*": true,
+        "bash": true
       },
       "permission": {
         "task": { "*": "allow", "autopilot": "deny", "ha": "deny" },
+        "bash": {
+          "*": "ask",
+          "ssh esp.iot *": "allow",
+          "ssh -o BatchMode=yes esp.iot *": "allow",
+          "scp * esp.iot:*": "allow",
+          "scp esp.iot:* *": "allow"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow"
