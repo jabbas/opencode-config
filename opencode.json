@@ -481,7 +481,7 @@
       "enabled": true,
       "oauth": false,
       "headers": {
-        "Authorization": "Bearer {file:secrets/homeassistant.token}"
+        "Accept": "application/json, text/event-stream"
       }
     },
 
