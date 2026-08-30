@@ -494,11 +494,11 @@
     },
 
     "stitch": {
-      "type": "remote",
-      "url": "https://stitch.googleapis.com/mcp",
+      "type": "local",
+      "command": ["node", "/Users/jabbas/.config/opencode/scripts/stitch-mcp-proxy.mjs"],
       "enabled": true,
-      "headers": {
-        "X-Goog-Api-Key": "{file:secrets/stitch.key}"
+      "environment": {
+        "STITCH_QUOTA_PROJECT": "stich-for-ai"
       }
     }
 
