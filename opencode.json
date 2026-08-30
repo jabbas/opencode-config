@@ -1,24 +1,23 @@
 {
   "$schema": "https://opencode.ai/config.json",
-
-  "model": "anthropic/claude-sonnet-5",
-
-  "instructions": ["~/.config/opencode/docs/global-rules.md", "~/.config/opencode/docs/memory-rules.md"],
-
+  "instructions": [
+    "docs/global-rules.md",
+    "docs/memory-rules.md"
+  ],
   "compaction": {
     "auto": true,
     "prune": true,
     "reserved": 10000
   },
-
   "plugin": [
     "opencode-mnemosyne",
     "opencode-anthropic-oauth"
   ],
-
   "permission": {
     "edit": "ask",
-    "task": { "autopilot": "deny" },
+    "task": {
+      "autopilot": "deny"
+    },
     "bash": {
       "*": "ask",
       "cat *": "allow",
@@ -41,17 +40,16 @@
       "git branch *": "allow"
     }
   },
-
   "tools": {
     "playwright_*": false,
     "homeassistant_*": false,
     "chrome-devtools_*": false,
     "firecrawl_*": false,
+    "jira_*": false,
     "stitch_*": false,
     "webfetch": false,
     "WebFetch": false
   },
-
   "agent": {
     "plan": {
       "prompt": "You are in PLAN MODE. Analyze the codebase thoroughly before making any changes. Do not execute any commands or write files. Only provide detailed analysis and plan.",
@@ -62,7 +60,11 @@
         "write": false
       },
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "plan": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "plan": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -71,14 +73,18 @@
         }
       }
     },
-
     "autopilot": {
-      "model": "anthropic/claude-opus-5",
       "mode": "primary",
       "permission": {
         "bash": "deny",
-        "edit": { "*": "deny", "docs/superpowers/**": "allow" },
-        "task": { "*": "allow", "autopilot": "deny" },
+        "edit": {
+          "*": "deny",
+          "docs/superpowers/**": "allow"
+        },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -91,11 +97,13 @@
         }
       }
     },
-
     "coder": {
-      "model": "anthropic/claude-sonnet-5",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "coder": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "coder": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -116,10 +124,13 @@
         }
       }
     },
-
     "general": {
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "general": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "general": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -142,12 +153,14 @@
         }
       }
     },
-
     "architect": {
-      "model": "anthropic/claude-opus-5",
       "permission": {
         "bash": "deny",
-        "task": { "*": "allow", "autopilot": "deny", "architect": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "architect": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -157,11 +170,13 @@
         }
       }
     },
-
     "debugger": {
-      "model": "anthropic/claude-opus-5",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "debugger": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "debugger": "deny"
+        },
         "bash": {
           "*": "ask",
           "kubectl get *": "allow",
@@ -183,11 +198,13 @@
         }
       }
     },
-
     "devops": {
-      "model": "anthropic/claude-sonnet-5",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "devops": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "devops": "deny"
+        },
         "bash": {
           "*": "ask",
           "git log *": "allow",
@@ -223,15 +240,55 @@
         }
       }
     },
-
+    "jenkins": {
+      "permission": {
+        "bash": {
+          "*": "ask",
+          "jk --version": "allow",
+          "jk version *": "allow",
+          "jk auth status*": "allow",
+          "jk context ls*": "allow",
+          "jk search *": "allow",
+          "jk job ls*": "allow",
+          "jk job view *": "allow",
+          "jk job config *": "allow",
+          "jk run ls *": "allow",
+          "jk run view *": "allow",
+          "jk run params *": "allow",
+          "jk run search *": "allow",
+          "jk log *": "allow",
+          "jk artifact ls *": "allow",
+          "jk test report *": "allow",
+          "jk cred ls*": "allow",
+          "jk node ls*": "allow",
+          "jk queue ls*": "allow",
+          "jk plugin ls*": "allow"
+        },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "jenkins": "deny"
+        },
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow",
+          "jk": "allow",
+          "systematic-debugging": "allow",
+          "verification-before-completion": "allow"
+        }
+      }
+    },
     "webdebugger": {
-      "model": "anthropic/claude-sonnet-5",
       "tools": {
         "playwright_*": true,
         "chrome-devtools_*": true
       },
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "webdebugger": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "webdebugger": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -242,15 +299,17 @@
         }
       }
     },
-
     "ha": {
-      "model": "anthropic/claude-sonnet-5",
       "tools": {
         "homeassistant_*": true,
         "bash": true
       },
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "ha": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "ha": "deny"
+        },
         "bash": {
           "*": "ask",
           "ssh esp.iot *": "allow",
@@ -264,9 +323,7 @@
         }
       }
     },
-
     "webscraper": {
-      "model": "anthropic/claude-haiku-4-5",
       "tools": {
         "firecrawl_firecrawl_scrape": true,
         "firecrawl_firecrawl_map": true,
@@ -276,16 +333,18 @@
         "firecrawl_firecrawl_interact_stop": true
       },
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "webscraper": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "webscraper": "deny"
+        },
         "bash": "deny",
         "skill": {
           "*": "deny"
         }
       }
     },
-
     "webresearcher": {
-      "model": "anthropic/claude-sonnet-5",
       "tools": {
         "firecrawl_firecrawl_search": true,
         "firecrawl_firecrawl_search_feedback": true,
@@ -295,16 +354,18 @@
         "firecrawl_firecrawl_agent_status": true
       },
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "webresearcher": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "webresearcher": "deny"
+        },
         "bash": "deny",
         "skill": {
           "*": "deny"
         }
       }
     },
-
     "webmonitor": {
-      "model": "anthropic/claude-haiku-4-5",
       "tools": {
         "firecrawl_firecrawl_monitor_create": true,
         "firecrawl_firecrawl_monitor_get": true,
@@ -316,18 +377,24 @@
         "firecrawl_firecrawl_monitor_check": true
       },
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "webmonitor": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "webmonitor": "deny"
+        },
         "bash": "deny",
         "skill": {
           "*": "deny"
         }
       }
     },
-
     "cloudflare": {
-      "model": "anthropic/claude-sonnet-5",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "cloudflare": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "cloudflare": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -343,11 +410,13 @@
         }
       }
     },
-
     "frontend": {
-      "model": "anthropic/claude-sonnet-5",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "frontend": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "frontend": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -375,14 +444,16 @@
         }
       }
     },
-
     "stitch": {
-      "model": "anthropic/claude-sonnet-5",
       "tools": {
         "stitch_*": true
       },
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "stitch": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "stitch": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -397,11 +468,13 @@
         }
       }
     },
-
     "writer": {
-      "model": "anthropic/claude-sonnet-5",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "writer": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "writer": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -414,11 +487,13 @@
         }
       }
     },
-
     "skill-smith": {
-      "model": "anthropic/claude-sonnet-5",
       "permission": {
-        "task": { "*": "allow", "autopilot": "deny", "skill-smith": "deny" },
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "skill-smith": "deny"
+        },
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
@@ -427,16 +502,51 @@
           "mcp-builder": "allow"
         }
       }
+    },
+    "jira": {
+      "tools": {
+        "jira_*": true
+      },
+      "permission": {
+        "bash": "deny",
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "jira": "deny"
+        },
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow"
+        }
+      }
+    },
+    "stitch-mcp": {
+      "tools": {
+        "stitch_*": true
+      },
+      "permission": {
+        "bash": "deny",
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "stitch-mcp": "deny"
+        },
+        "skill": {
+          "*": "deny",
+          "using-superpowers": "allow"
+        }
+      }
     }
   },
-
   "mcp": {
-
     "playwright": {
       "type": "local",
-      "command": ["npx", "-y", "@playwright/mcp@latest"]
+      "command": [
+        "npx",
+        "-y",
+        "@playwright/mcp@latest"
+      ]
     },
-
     "context7": {
       "type": "remote",
       "url": "https://mcp.context7.com/mcp",
@@ -445,35 +555,45 @@
       },
       "enabled": true
     },
-
     "github": {
       "type": "local",
-      "command": ["npx", "-y", "@modelcontextprotocol/server-github"],
+      "command": [
+        "npx",
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
       "enabled": false,
       "environment": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "{file:secrets/github.pat}"
       }
     },
-
     "pdf-reader": {
       "type": "local",
-      "command": ["npx", "-y", "@sylphx/pdf-reader-mcp"],
+      "command": [
+        "npx",
+        "-y",
+        "@sylphx/pdf-reader-mcp"
+      ],
       "enabled": false
     },
-
     "chrome-devtools": {
       "type": "local",
-      "command": ["npx", "-y", "chrome-devtools-mcp@latest"],
+      "command": [
+        "npx",
+        "-y",
+        "chrome-devtools-mcp@latest"
+      ],
       "enabled": true
     },
-
     "dart-mcp-server": {
       "type": "local",
-      "command": ["dart", "mcp-server"],
+      "command": [
+        "dart",
+        "mcp-server"
+      ],
       "enabled": false,
       "environment": {}
     },
-
     "homeassistant": {
       "type": "remote",
       "url": "{file:secrets/homeassistant.url}",
@@ -483,25 +603,40 @@
         "Accept": "application/json, text/event-stream"
       }
     },
-
     "firecrawl": {
       "type": "local",
-      "command": ["npx", "-y", "firecrawl-mcp"],
+      "command": [
+        "npx",
+        "-y",
+        "firecrawl-mcp"
+      ],
       "enabled": true,
       "environment": {
-        "FIRECRAWL_API_URL": "{file:secrets/firecrawl.url}"
+        "FIRECRAWL_API_URL": "{file:secrets/firecrawl.url}",
+        "FIRECRAWL_API_KEY": "{file:secrets/firecrawl.key}"
       }
     },
-
+    "jira": {
+      "type": "local",
+      "command": [
+        "mcp-atlassian",
+        "--jira-url",
+        "{file:secrets/jira.url}",
+        "--jira-personal-token",
+        "{file:secrets/jira.token}"
+      ],
+      "enabled": true
+    },
     "stitch": {
       "type": "local",
-      "command": ["node", "/Users/jabbas/.config/opencode/scripts/stitch-mcp-proxy.mjs"],
+      "command": [
+        "node",
+        "/Users/jabbas/.config/opencode/scripts/stitch-mcp-proxy.mjs"
+      ],
       "enabled": true,
       "environment": {
         "STITCH_QUOTA_PROJECT": "stich-for-ai"
       }
     }
-
   }
-
 }

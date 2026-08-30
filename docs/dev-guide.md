@@ -15,7 +15,7 @@ see `docs/superpowers/specs/2026-06-14-agents-md-slimming-design.md`.)
 ├── alibaba-cloud.apikey       # Root-level secret (gitignored)
 ├── secrets/                   # API keys and tokens (gitignored; see secrets/README.md)
 ├── AGENTS.md                  # This file
-├── agents/                    # Custom agent definitions (15 files; + built-in `plan` in opencode.json = 16 agents — see Agent Roster)
+├── agents/                    # Custom agent definitions (19 files; + built-in `plan` in opencode.json = 20 agents — see Agent Roster)
 ├── docs/
 │   ├── global-rules.md        # Safety rules (loaded via opencode.json instructions)
 │   ├── memory-rules.md        # Memory store/recall rules (loaded via opencode.json instructions)
@@ -26,12 +26,14 @@ see `docs/superpowers/specs/2026-06-14-agents-md-slimming-design.md`.)
 │   ├── anthropics/            # → ../anthropics-skills/skills
 │   ├── cloudflare-skills/     # → ../cloudflare-skills
 │   ├── stitch-skills/         # → ../stitch-skills
-│   └── superpowers/           # → ../superpowers/skills
+│   ├── superpowers/           # → ../superpowers/skills
+│   └── jenkins-cli/           # → ../jenkins-cli/skills
 ├── superpowers/               # Main plugin repo — git submodule (obra/superpowers, v5.1.0)
 ├── anthropics-skills/         # Anthropic official skills — git submodule
 ├── cloudflare-skills/         # Cloudflare skills — git submodule
 ├── stitch-skills/             # Google Stitch skills — git submodule
-└── awesome-agent-skills/      # Community skills — git submodule
+├── awesome-agent-skills/      # Community skills — git submodule
+└── jenkins-cli/               # Jenkins CLI (jk) skill — git submodule (avivsinai/jenkins-cli)
 ```
 
 **Plugin load method:** Symlink (`plugins/superpowers.js` → `superpowers/.opencode/plugins/superpowers.js`). Frontmatter parsing and skill discovery are inlined in `superpowers.js`. The plugin auto-adds `superpowers/skills/` to config at runtime.

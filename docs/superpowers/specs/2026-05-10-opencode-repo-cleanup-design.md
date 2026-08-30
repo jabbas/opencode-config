@@ -116,7 +116,7 @@ ALIBABA_CLOUD_API_KEY=
 | Section | Problem |
 |---------|---------|
 | Lines 51-58: `skills/` layout | Lists 7 symlinks with 4 BROKEN. Reality: 4 working symlinks, no broken ones |
-| Lines 73-75: broken symlinks paragraph | References `/Users/gdziegielewski/...` — no longer applies |
+| Lines 73-75: broken symlinks paragraph | References `~/...` — no longer applies |
 | Line 51: WARNING comment | Says "several symlinks broken" — no longer true |
 | Lines 64-67: submodule labels | Says "git submodule" but they're standalone clones (will be true after this cleanup) |
 | Lines 181-200: agent roster | Lists 15 agents but only 7 exist in `agents/`: `coder`, `debugger`, `default`, `designer`, `devops`, `ha`, `websearch` |
