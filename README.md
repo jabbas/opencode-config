@@ -76,6 +76,16 @@ the `provider` block for this machine (leave `{}` if none).
 Each file holds a single value with **no trailing newline** (use `printf '%s'`).
 All files in `secrets/` except `README.md` are gitignored.
 
+If OpenCode fails with `bad file reference`, create all missing placeholder
+files first:
+
+```bash
+bash scripts/init-secret-placeholders.sh
+```
+
+The placeholders only satisfy config validation. Fill in real values for the MCP
+servers you want to use.
+
 | File | Description |
 |------|-------------|
 | `context7.key` | Context7 API key |

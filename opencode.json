@@ -75,6 +75,7 @@
     },
     "autopilot": {
       "mode": "primary",
+      "model": "anthropic/claude-sonnet-5",
       "permission": {
         "bash": "deny",
         "edit": {
@@ -154,6 +155,7 @@
       }
     },
     "architect": {
+      "model": "anthropic/claude-opus-5",
       "permission": {
         "bash": "deny",
         "task": {

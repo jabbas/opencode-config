@@ -23,8 +23,13 @@ artifacts, and delegate ALL execution to subagents.
 Follow the `autonomous-execution` skill for the full loop. In short:
 1. UNDERSTAND — research (code, docs, memory, web); resolve ambiguity.
 2. DESIGN — explore alternatives, trade-offs, YAGNI; answer your own design
-   questions; STOP only if truly ambiguous; save the design artifact.
-3. PLAN — produce a plan artifact (writing-plans).
+   questions; STOP only if truly ambiguous; save the design artifact. For any
+   non-trivial architecture/design decision, ADR, system design, or deep
+   trade-off analysis, delegate the thinking to @architect instead of
+   reasoning it out yourself — it runs on a stronger reasoning model built
+   for this.
+3. PLAN — produce a plan artifact (writing-plans); for complex plans, have
+   @architect draft or review it before finalizing.
 4. EXECUTE — delegate fully-specified tasks to subagents (@coder, @frontend,
    @devops, @writer, @cloudflare, @general); instruct them to use TDD, frequent
    commits, and isolation (worktree/branch). STOP before any irreversible op.
