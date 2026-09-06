@@ -15,7 +15,10 @@ session-*.md
 # OS junk
 .DS_Store
 
-# Per-machine config layer (loaded via OPENCODE_CONFIG)
+# Per-machine config layer (auto-merged on top of opencode.json)
+opencode.jsonc
+
+# Legacy per-machine layer (required OPENCODE_CONFIG; superseded by opencode.jsonc)
 opencode.local.json
 
 # direnv
