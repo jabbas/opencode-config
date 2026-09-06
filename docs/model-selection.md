@@ -1,5 +1,24 @@
 # Dobór modeli LLM dla agentów OpenCode
 
+> ## ⚠️ SUPERSEDED — dokument historyczny (nieaktualny od 2026-09-05)
+>
+> **Ten dokument NIE opisuje obecnej konfiguracji.** Opisuje decyzję z czerwca 2026
+> o przejściu na modele non-frontier przez gateway Kilo Code (GLM 5.2, Kimi K2.7
+> Code, Qwen3.7 Plus, DeepSeek V4 Flash). Ta decyzja została porzucona.
+>
+> **Stan faktyczny:** wszyscy agenci działają na modelach Anthropic —
+> `claude-sonnet-5` domyślnie, `claude-opus-5` dla `architect` i `debugger`,
+> `claude-haiku-4-5` jako `small_model`. Rozliczane subskrypcją Claude Max 5x,
+> nie per-token.
+>
+> Nieaktualna jest też sekcja 8: modele ustawia się w `opencode.jsonc`
+> (auto-mergowany), a nie w `opencode.local.json` przez `OPENCODE_CONFIG` —
+> ten mechanizm został wycofany, bo psuł discovery configów projektowych.
+>
+> Zachowane jako zapis rozumowania (metodologia, odrzucone opcje, ryzyko
+> `:discounted` / `mayTrainOnYourPrompts`) — przydatne, gdyby wracać do tematu
+> non-frontier. Aktualny stan: `README.md` i `AGENTS.md`.
+
 **Stan: czerwiec 2026**
 
 ---

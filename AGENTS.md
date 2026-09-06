@@ -22,21 +22,25 @@ home automation) do not need it.
 ## Model Layer & Machine Portability
 
 This config is shared verbatim between the private and work machines. The shared
-`opencode.json` contains NO `model`, `small_model`, or machine-specific `provider`
-block. Those live in a per-machine `opencode.local.json` (gitignored), which
-OpenCode deep-merges on top of the base via the `OPENCODE_CONFIG` env var.
+`opencode.json` contains no top-level `model`/`small_model` and no machine-specific
+`provider` block. Those live in a per-machine `opencode.jsonc` (gitignored), which
+OpenCode **auto-loads and deep-merges on top of `opencode.json`**. No env var needed.
 
-- **Defaults:** `opencode.local.json` sets `model` = sonnet and `small_model` =
-  haiku.
+- **Load order** (ascending precedence): `config.json` → `opencode.json` →
+  `opencode.jsonc` → project config (`.opencode/opencode.jsonc` etc.). All are
+  deep-merged; later layers win per-key.
+- **Defaults:** `opencode.jsonc` sets `model` = sonnet and `small_model` = haiku.
 - **Per-agent override:** thinking-role agents can set their own model via
-  `agent.<name>.model` in the local layer. Everyone else inherits the global
-  sonnet. To change a model for one agent, edit one line in `opencode.local.json`.
+  `agent.<name>.model`. Everyone else inherits the global default. To change a
+  model for one agent, edit one line in `opencode.jsonc`. (Note: `opencode.json`
+  also pins a few agent models that are meant to be identical everywhere —
+  currently `autopilot` and `architect`.)
 - **Providers:** machine-specific providers (e.g. a work-only gateway such as
-  `kilocode`) go in the local layer's `provider` block, not in `opencode.json`.
-- **Loading:** `.envrc` (direnv) exports
-  `OPENCODE_CONFIG="$PWD/opencode.local.json"` on entering the config dir. Run
-  `direnv allow .` once per machine. Without direnv, export `OPENCODE_CONFIG`
-  manually (absolute path to `opencode.local.json`).
+  `kilocode`) go in `opencode.jsonc`'s `provider` block, not in `opencode.json`.
+- **Never use `OPENCODE_CONFIG`.** Setting it silently disables project-level
+  config discovery — a repo's own `opencode.json`/`.opencode/opencode.jsonc` is
+  ignored with no warning. The retired `opencode.local.json` layer depended on it;
+  it has been removed. `opencode.jsonc` replaces it with no such drawback.
 - **Secrets:** all URLs/keys use `{file:secrets/*}`, which resolves relative to
   the config dir, so the same `opencode.json` reads each machine's own secrets.
 
@@ -78,7 +82,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 
 - `plan` agent is defined in `opencode.json` only (read-only: no bash/edit/write tools).
 - `websearch` was removed — curl/wget is covered by any bash-enabled agent; readable web content via `@webscraper`.
-- Models are intentionally omitted here; they are inherited from `opencode.local.json` on each machine.
+- Models are intentionally omitted here; they come from `opencode.jsonc` on each machine (plus a few cross-machine pins in `opencode.json`).
 
 ## Delegation Rules (All Agents)
 

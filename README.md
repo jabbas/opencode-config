@@ -5,8 +5,8 @@ Personal global OpenCode config: the Superpowers plugin system, skill repositori
 
 This config is designed to run **identically on multiple machines** (e.g. a private
 and a work laptop). The shared base (`opencode.json`, agents, skills, docs) is the
-same everywhere; everything machine-specific lives in two gitignored files:
-`opencode.local.json` (models/providers) and `secrets/*` (keys/URLs).
+same everywhere; everything machine-specific lives in two gitignored places:
+`opencode.jsonc` (models/providers) and `secrets/*` (keys/URLs).
 
 ---
 
@@ -15,13 +15,25 @@ same everywhere; everything machine-specific lives in two gitignored files:
 | File | Tracked? | Same on every machine? | Holds |
 |------|----------|------------------------|-------|
 | `opencode.json` | yes | **yes (identical)** | agents, MCP servers, skills, permissions, tool gating |
-| `opencode.local.json` | no (gitignored) | no | `model`, `small_model`, `provider` block, per-agent model overrides |
+| `opencode.jsonc` | no (gitignored) | no | `model`, `small_model`, `provider` block, per-agent model overrides |
 | `secrets/*` | no (gitignored) | no | API keys and infra URLs (`{file:secrets/...}`) |
-| `.envrc` | no (gitignored) | no | optional direnv loader for `OPENCODE_CONFIG` |
 
-At runtime OpenCode loads `opencode.json`, then deep-merges `opencode.local.json`
-on top (via the `OPENCODE_CONFIG` env var). The local layer wins per-key, so it can
-set models/providers without touching the shared base.
+At runtime OpenCode auto-loads and deep-merges, in ascending precedence:
+
+```
+config.json  →  opencode.json  →  opencode.jsonc  →  project config
+                (shared base)     (per-machine)
+```
+
+The local layer wins per-key, so it can set models/providers without touching the
+shared base. **No environment variable is involved** — `opencode.jsonc` is one of
+the filenames OpenCode discovers natively in the config dir. It also supports `//`
+comments.
+
+> **Do not use `OPENCODE_CONFIG`.** Pointing it at a config file silently disables
+> project-level config discovery: a repo's own `opencode.json`/`.opencode/opencode.jsonc`
+> is ignored without warning. An earlier `opencode.local.json` layer relied on it and
+> has been retired.
 
 `{file:secrets/...}` references resolve **relative to the config directory**, so the
 same `opencode.json` automatically reads each machine's own `secrets/`.
@@ -30,29 +42,34 @@ same `opencode.json` automatically reads each machine's own `secrets/`.
 
 ## Models
 
-Only two model roles are used:
+Only three model roles are used:
 
-- **thinking** = `anthropic/claude-opus-4-8` → `architect`, `debugger`
-- **default** = `anthropic/claude-sonnet-4-6` → everyone else
+- **thinking** = `anthropic/claude-opus-5` → `architect`, `debugger`
+- **default** = `anthropic/claude-sonnet-5` → everyone else
 - **small** = `anthropic/claude-haiku-4-5`
 
-All of this is set in `opencode.local.json`. **To change a model for one agent,
+All of this is set in `opencode.jsonc`. **To change a model for one agent,
 edit one line** in that file:
 
-```json
+```jsonc
 {
-  "model": "anthropic/claude-sonnet-4-6",
+  "$schema": "https://opencode.ai/config.json",
+  "model": "anthropic/claude-sonnet-5",
   "small_model": "anthropic/claude-haiku-4-5",
   "provider": { },
   "agent": {
-    "architect": { "model": "anthropic/claude-opus-4-8" },
-    "debugger":  { "model": "anthropic/claude-opus-4-8" }
+    "architect": { "model": "anthropic/claude-opus-5" },
+    "debugger":  { "model": "anthropic/claude-opus-5" }
   }
 }
 ```
 
 Machine-specific providers (e.g. a work-only gateway such as `kilocode`) go in the
 `provider` block here — never in `opencode.json`.
+
+A few agent models are pinned in the shared `opencode.json` instead, because they
+should be identical on every machine (currently `autopilot` → sonnet, `architect`
+→ opus). `opencode.jsonc` can still override them locally.
 
 ---
 
@@ -66,10 +83,11 @@ cd ~/.config/opencode
 git submodule update --init --recursive
 ```
 
-### 2. Create `opencode.local.json`
+### 2. Create `opencode.jsonc`
 
-Copy the template above into `~/.config/opencode/opencode.local.json` and fill in
-the `provider` block for this machine (leave `{}` if none).
+Copy the template above into `~/.config/opencode/opencode.jsonc` and fill in
+the `provider` block for this machine (leave `{}` if none). It is picked up
+automatically — nothing else to wire up.
 
 ### 3. Fill in secrets
 
@@ -111,57 +129,38 @@ printf '%s' 'your-jira-token'                     > secrets/jira.token
 printf '%s' 'your-stitch-key'                     > secrets/stitch.key
 ```
 
-### 4. Wire up `OPENCODE_CONFIG`
+### 4. Run it
 
-Pick **one** of the options below.
+Nothing to wire up — just run `opencode`. The local layer is discovered
+automatically.
 
----
+### Side-by-side configs
 
-## Running: pointing OpenCode at the local layer
-
-OpenCode needs `OPENCODE_CONFIG` to point at `opencode.local.json`. Three ways:
-
-### Option A — Shell alias (no extra tools)
-
-Add to `~/.zshrc`:
+To switch to a completely separate config directory, use `XDG_CONFIG_HOME`. It
+genuinely replaces `Path.config` and keeps project config discovery working
+(verified empirically):
 
 ```bash
-alias opencode='OPENCODE_CONFIG="$HOME/.config/opencode/opencode.local.json" opencode'
+alias opencode-priv='XDG_CONFIG_HOME="$HOME/.config-priv" opencode'
+# reads $HOME/.config-priv/opencode/
 ```
 
-Then `source ~/.zshrc` and just run `opencode`.
+This swaps only the config dir; data/state/cache have their own `XDG_*_HOME`.
 
-If you keep two configs side by side, use two aliases instead:
+Two variables that look like they'd do this, but **don't**:
 
-```bash
-alias opencode-work='OPENCODE_CONFIG="$HOME/.config/opencode/opencode.local.json" opencode'
-alias opencode-priv='OPENCODE_CONFIG="$HOME/.config/opencode-priv/opencode.local.json" opencode'
+| Variable | Actual behaviour |
+|---|---|
+| `OPENCODE_CONFIG` | Loads one extra file — and **silently disables project config discovery**. Never use it. |
+| `OPENCODE_CONFIG_DIR` | Does **not** replace the config dir. `~/.config/opencode` still loads in full; the given dir is *appended* as the highest-priority layer, overriding even project config. OpenCode also writes `.gitignore`/`package.json`/`node_modules/` into it (treats it as a plugin dir). |
+
+Full merge order (ascending precedence):
+
 ```
-
-### Option B — direnv (automatic per directory)
-
-[direnv](https://direnv.net/) auto-loads `OPENCODE_CONFIG` when you `cd` into the
-config dir and unloads it when you leave.
-
-```bash
-brew install direnv
-echo 'eval "$(direnv hook zsh)"' >> ~/.zshrc
-source ~/.zshrc
-
-cd ~/.config/opencode
-direnv allow .       # approve the .envrc once
-```
-
-The committed-as-ignored `.envrc` contains:
-
-```bash
-export OPENCODE_CONFIG="$PWD/opencode.local.json"
-```
-
-### Option C — Export manually (one-off)
-
-```bash
-OPENCODE_CONFIG="$HOME/.config/opencode/opencode.local.json" opencode
+~/.config/opencode/{config.json → opencode.json → opencode.jsonc}
+  → $OPENCODE_CONFIG
+  → project config (opencode.json/jsonc walking up the tree)
+  → .opencode/ dirs + $OPENCODE_CONFIG_DIR
 ```
 
 ---
@@ -182,12 +181,19 @@ wiring. Key points:
 ## Verifying the setup
 
 ```bash
-# config is valid JSON
-jq empty opencode.json && jq empty opencode.local.json && echo OK
+# config is valid JSON (opencode.jsonc may contain // comments)
+jq empty opencode.json && echo OK
 
-# the local layer is being applied (run with OPENCODE_CONFIG set)
-opencode --version
+# the local layer is actually being applied
+opencode debug config > /tmp/cfg.json      # ~70 KB; don't pipe straight to jq
+jq '{model, small_model, architect: .agent.architect.model}' /tmp/cfg.json
+
+# per-agent resolution
+opencode debug agent architect
 ```
+
+`model`/`small_model` coming back `null` means `opencode.jsonc` is missing or not
+being read.
 
 To confirm two machines share an identical base:
 
@@ -203,8 +209,7 @@ diff <(jq -S . ~/.config/opencode-priv/opencode.json) \
 ```
 ~/.config/opencode/
 ├── opencode.json          # shared base (tracked, identical everywhere)
-├── opencode.local.json    # per-machine models/providers (gitignored)
-├── .envrc                 # optional direnv loader (gitignored)
+├── opencode.jsonc         # per-machine models/providers (gitignored, auto-merged)
 ├── AGENTS.md              # agent roster + conventions
 ├── agents/               # agent definitions (*.md)
 ├── docs/                 # rules, specs, plans
