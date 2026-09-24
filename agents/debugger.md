@@ -8,7 +8,14 @@ tools:
   bash: true
   glob: true
   grep: true
+permission:
+  bash:
+    "security *": deny
+    "/usr/bin/security *": deny
+    "sudo security *": deny
 ---
+
+You are the `debugger` agent. NEVER dispatch `debugger` via the task tool — that is you; self-delegation is permission-blocked and wastes a turn. Debug directly.
 
 You are a full-stack debugging specialist covering the entire stack from cluster infrastructure down to application code.
 

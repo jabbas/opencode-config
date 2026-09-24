@@ -64,7 +64,7 @@ edit one line** in that file:
 }
 ```
 
-Machine-specific providers (e.g. a work-only gateway such as `kilocode`) go in the
+Machine-specific providers (e.g. a work-only gateway such as `my-company`) go in the
 `provider` block here — never in `opencode.json`.
 
 A few agent models are pinned in the shared `opencode.json` instead, because they

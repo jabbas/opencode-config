@@ -11,7 +11,8 @@
   },
   "plugin": [
     "opencode-mnemosyne",
-    "opencode-anthropic-oauth"
+    "opencode-anthropic-oauth",
+    "@dragenetlabs/opencode-kilo-gateway"
   ],
   "permission": {
     "edit": "ask",
@@ -19,6 +20,9 @@
       "autopilot": "deny"
     },
     "bash": {
+      "security *": "deny",
+      "/usr/bin/security *": "deny",
+      "sudo security *": "deny",
       "*": "ask",
       "cat *": "allow",
       "echo *": "allow",

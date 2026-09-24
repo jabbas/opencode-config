@@ -88,6 +88,11 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 
 These apply to every agent (this file is injected globally via `Instruction.system`):
 
+- **NEVER delegate to yourself.** If the task falls within your own specialty, DO
+  THE WORK DIRECTLY — do not dispatch a subagent of your own type (e.g. `jenkins`
+  calling `@jenkins`). Self-dispatch is also hard-blocked: every agent has
+  `task: {"<own-name>": "deny"}` in `opencode.json`, so the attempt will fail —
+  don't waste a turn trying.
 - **Any agent may delegate to any other agent, except `autopilot` can never be
   called.** Every agent carries an explicit `task: {"*": "allow", "autopilot":
   "deny"}` in `opencode.json`. The explicit rule is required because of
