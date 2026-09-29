@@ -11,7 +11,7 @@
   },
   "plugin": [
     "opencode-mnemosyne",
-    "opencode-anthropic-oauth",
+    "@ex-machina/opencode-anthropic-auth@1.8.5",
     "@dragenetlabs/opencode-kilo-gateway"
   ],
   "permission": {
