@@ -184,7 +184,6 @@
           "debugger": "deny"
         },
         "bash": {
-          "*": "ask",
           "kubectl get *": "allow",
           "kubectl describe *": "allow",
           "kubectl logs *": "allow",
@@ -212,7 +211,6 @@
           "devops": "deny"
         },
         "bash": {
-          "*": "ask",
           "git log *": "allow",
           "git status *": "allow",
           "git diff *": "allow",
@@ -249,7 +247,6 @@
     "jenkins": {
       "permission": {
         "bash": {
-          "*": "ask",
           "jk --version": "allow",
           "jk version *": "allow",
           "jk auth status*": "allow",
@@ -317,7 +314,6 @@
           "ha": "deny"
         },
         "bash": {
-          "*": "ask",
           "ssh esp.iot *": "allow",
           "ssh -o BatchMode=yes esp.iot *": "allow",
           "scp * esp.iot:*": "allow",
