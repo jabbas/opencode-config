@@ -12,8 +12,10 @@
 > nie per-token.
 >
 > Nieaktualna jest też sekcja 8: modele ustawia się w `opencode.jsonc`
-> (auto-mergowany), a nie w `opencode.local.json` przez `OPENCODE_CONFIG` —
-> ten mechanizm został wycofany, bo psuł discovery configów projektowych.
+> (auto-mergowany; może być symlinkiem do wariantu `opencode.*.json`), a nie
+> w `opencode.local.json` przez `OPENCODE_CONFIG` — ten mechanizm został wycofany,
+> bo działał tylko tam, gdzie zmienna była wyeksportowana (GUI/ACP dostawały
+> `model: null`) i nadpisywał `opencode.jsonc`.
 >
 > Zachowane jako zapis rozumowania (metodologia, odrzucone opcje, ryzyko
 > `:discounted` / `mayTrainOnYourPrompts`) — przydatne, gdyby wracać do tematu

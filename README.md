@@ -30,10 +30,12 @@ shared base. **No environment variable is involved** — `opencode.jsonc` is one
 the filenames OpenCode discovers natively in the config dir. It also supports `//`
 comments.
 
-> **Do not use `OPENCODE_CONFIG`.** Pointing it at a config file silently disables
-> project-level config discovery: a repo's own `opencode.json`/`.opencode/opencode.jsonc`
-> is ignored without warning. An earlier `opencode.local.json` layer relied on it and
-> has been retired.
+> **Do not use `OPENCODE_CONFIG`.** It only works where the variable is exported
+> (e.g. from `~/.zshrc`; OpenCode Desktop, editor/ACP launches and launchd don't
+> see it — there `model` silently resolves to `null`), and it is merged *after*
+> `opencode.jsonc`, so it silently overrides the local layer. An earlier
+> `opencode.local.json` layer relied on it and has been retired. (Older docs claimed
+> it disables project config discovery — verified false on 1.18.33.)
 
 `{file:secrets/...}` references resolve **relative to the config directory**, so the
 same `opencode.json` automatically reads each machine's own `secrets/`.
@@ -88,6 +90,25 @@ git submodule update --init --recursive
 Copy the template above into `~/.config/opencode/opencode.jsonc` and fill in
 the `provider` block for this machine (leave `{}` if none). It is picked up
 automatically — nothing else to wire up.
+
+#### Optional: switchable variants
+
+If one machine needs more than one model setup (e.g. a work gateway and plain
+Anthropic), keep each as a gitignored variant file and make `opencode.jsonc` a
+symlink to the active one:
+
+```bash
+cd ~/.config/opencode
+# variants: opencode.kilocode.json, opencode.anthropic.json, ... (gitignored: opencode.*.json)
+ln -sfn opencode.kilocode.json opencode.jsonc     # switch = re-point the symlink
+ls -l opencode.jsonc                               # confirm it is still a symlink
+```
+
+Restart OpenCode after switching. Note: when OpenCode itself writes global config
+(e.g. `opencode plugin <x>`), it writes to the first existing of
+`opencode.jsonc` → `opencode.json` → `config.json` — i.e. through the symlink into
+the active variant, not into the shared `opencode.json`. Add shared plugins to
+`opencode.json` by hand.
 
 ### 3. Fill in secrets
 
@@ -151,7 +172,7 @@ Two variables that look like they'd do this, but **don't**:
 
 | Variable | Actual behaviour |
 |---|---|
-| `OPENCODE_CONFIG` | Loads one extra file — and **silently disables project config discovery**. Never use it. |
+| `OPENCODE_CONFIG` | Loads one extra file, merged *after* `opencode.jsonc` (silently overrides it). Only applies where the variable is exported — GUI/ACP/launchd launches don't see it. Project config discovery still works (verified on 1.18.33). Don't use it; use `opencode.jsonc`. |
 | `OPENCODE_CONFIG_DIR` | Does **not** replace the config dir. `~/.config/opencode` still loads in full; the given dir is *appended* as the highest-priority layer, overriding even project config. OpenCode also writes `.gitignore`/`package.json`/`node_modules/` into it (treats it as a plugin dir). |
 
 Full merge order (ascending precedence):
@@ -209,7 +230,8 @@ diff <(jq -S . ~/.config/opencode-priv/opencode.json) \
 ```
 ~/.config/opencode/
 ├── opencode.json          # shared base (tracked, identical everywhere)
-├── opencode.jsonc         # per-machine models/providers (gitignored, auto-merged)
+├── opencode.jsonc         # per-machine models/providers (gitignored, auto-merged; may be a symlink)
+├── opencode.*.json        # optional per-machine variants opencode.jsonc points to (gitignored)
 ├── AGENTS.md              # agent roster + conventions
 ├── agents/               # agent definitions (*.md)
 ├── docs/                 # rules, specs, plans

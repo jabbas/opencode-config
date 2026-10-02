@@ -37,10 +37,13 @@ OpenCode **auto-loads and deep-merges on top of `opencode.json`**. No env var ne
   currently `autopilot` and `architect`.)
 - **Providers:** machine-specific providers (e.g. a work-only gateway such as
   `kilocode`) go in `opencode.jsonc`'s `provider` block, not in `opencode.json`.
-- **Never use `OPENCODE_CONFIG`.** Setting it silently disables project-level
-  config discovery — a repo's own `opencode.json`/`.opencode/opencode.jsonc` is
-  ignored with no warning. The retired `opencode.local.json` layer depended on it;
-  it has been removed. `opencode.jsonc` replaces it with no such drawback.
+- **Never use `OPENCODE_CONFIG`.** It only applies where the env var is exported
+  (GUI/ACP/launchd launches get `model: null`) and is merged *after*
+  `opencode.jsonc`, silently overriding it. The retired `opencode.local.json` layer
+  depended on it. `opencode.jsonc` replaces it with no such drawback.
+- **Variants:** a machine may keep several gitignored `opencode.*.json` variants
+  and make `opencode.jsonc` a symlink to the active one
+  (`ln -sfn opencode.kilocode.json opencode.jsonc`). See README "switchable variants".
 - **Secrets:** all URLs/keys use `{file:secrets/*}`, which resolves relative to
   the config dir, so the same `opencode.json` reads each machine's own secrets.
 
