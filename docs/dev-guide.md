@@ -106,6 +106,18 @@ as `[INFO]`, not failures.
 bash scripts/check-skill-whitelists.sh   # exit 0 = OK, exit 1 = dead entries
 ```
 
+### Permission Audit (what commands actually run)
+Reads the OpenCode SQLite DB (`~/.local/share/opencode/opencode.db`, table
+`part`, `$.state.input.command` where `$.tool == "bash"`) and classifies every
+executed simple command as read-only vs mutating, aggregated by signature
+(`git log`, `kubectl get`, `aws ec2 describe-*`). Use it to tune the
+`permission.bash` allowlist against real usage instead of guesswork.
+```bash
+scripts/audit-bash-permissions.py                        # query default DB (~10 s)
+scripts/audit-bash-permissions.py --top 120 --json /tmp/report.json
+scripts/audit-bash-permissions.py --from-json export.json  # reuse an export
+```
+
 ## Code Style Guidelines
 
 ### JavaScript (ES Modules)
