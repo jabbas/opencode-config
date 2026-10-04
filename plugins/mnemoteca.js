@@ -1,0 +1,1 @@
+../opencode-mnemoteca/dist/index.js

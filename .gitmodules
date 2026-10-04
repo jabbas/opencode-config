@@ -16,3 +16,7 @@
 [submodule "jenkins-cli"]
 	path = jenkins-cli
 	url = https://github.com/avivsinai/jenkins-cli.git
+[submodule "opencode-mnemoteca"]
+	path = opencode-mnemoteca
+	url = https://github.com/jabbas/opencode-mnemoteca.git
+	branch = opencode-v2

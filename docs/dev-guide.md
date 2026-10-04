@@ -22,6 +22,7 @@ see `docs/superpowers/specs/2026-06-14-agents-md-slimming-design.md`.)
 │   ├── plans/                 # Implementation plans
 │   └── superpowers/           # Brainstorming specs and plans
 ├── plugins/superpowers.js     # Symlink → superpowers/.opencode/plugins/superpowers.js
+├── plugins/mnemoteca.js       # File symlink → ../opencode-mnemoteca/dist/index.js (dangling until built)
 ├── skills/                    # Skill discovery symlinks
 │   ├── anthropics/            # → ../anthropics-skills/skills
 │   ├── cloudflare-skills/     # → ../cloudflare-skills
@@ -33,7 +34,8 @@ see `docs/superpowers/specs/2026-06-14-agents-md-slimming-design.md`.)
 ├── cloudflare-skills/         # Cloudflare skills — git submodule
 ├── stitch-skills/             # Google Stitch skills — git submodule
 ├── awesome-agent-skills/      # Community skills — git submodule
-└── jenkins-cli/               # Jenkins CLI (jk) skill — git submodule (avivsinai/jenkins-cli)
+├── jenkins-cli/               # Jenkins CLI (jk) skill — git submodule (avivsinai/jenkins-cli)
+└── opencode-mnemoteca/        # Memory plugin (mnemoteca, OpenCode v2) — git submodule (jabbas/opencode-mnemoteca, branch opencode-v2); needs build
 ```
 
 **Plugin load method:** Symlink (`plugins/superpowers.js` → `superpowers/.opencode/plugins/superpowers.js`). Frontmatter parsing and skill discovery are inlined in `superpowers.js`. The plugin auto-adds `superpowers/skills/` to config at runtime.
@@ -193,7 +195,7 @@ scripts/audit-bash-permissions.py --from-json export.json  # reuse an export
 | Test runner | `superpowers/tests/opencode/run-tests.sh` |
 | Default agent | `agents/default.md` (name: `general`) |
 | Skill writing guide | `superpowers/AGENTS.md` |
-| Memory config | Plugin: `opencode-mnemosyne` (mnemosyne binary, SQLite + FTS5 + sqlite-vec) |
+| Memory config | Plugin: `plugins/mnemoteca.js` → `opencode-mnemoteca` fork (mnemoteca binary, SQLite + FTS5 + sqlite-vec; DB `~/.local/share/mnemoteca/mnemoteca.db`) |
 | Global rules | `docs/global-rules.md` |
 | Memory rules | `docs/memory-rules.md` |
 
