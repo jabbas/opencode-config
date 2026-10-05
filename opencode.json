@@ -10,7 +10,7 @@
     "reserved": 10000
   },
   "plugin": [
-    "opencode-anthropic-oauth"
+    "@andrzejchm/opencode-anthropic-auth@2.3.0"
   ],
   "permission": {
     "edit": "ask",
