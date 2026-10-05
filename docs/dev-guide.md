@@ -29,7 +29,7 @@ see `docs/superpowers/specs/2026-06-14-agents-md-slimming-design.md`.)
 │   ├── stitch-skills/         # → ../stitch-skills
 │   ├── superpowers/           # → ../superpowers/skills
 │   └── jenkins-cli/           # → ../jenkins-cli/skills
-├── superpowers/               # Main plugin repo — git submodule (obra/superpowers, v5.1.0)
+├── superpowers/               # Main plugin repo — git submodule (obra/superpowers, v6.4.2 — v2-plugin-API capable, required by OpenCode ≥2.0)
 ├── anthropics-skills/         # Anthropic official skills — git submodule
 ├── cloudflare-skills/         # Cloudflare skills — git submodule
 ├── stitch-skills/             # Google Stitch skills — git submodule
@@ -42,7 +42,11 @@ see `docs/superpowers/specs/2026-06-14-agents-md-slimming-design.md`.)
 
 **Secrets:** Stored in `secrets/` (gitignored), referenced via `{file:PATH}` syntax in `opencode.json`. See `secrets/README.md` for required files and setup.
 
-**Plugins:** Loaded via `opencode.json` `plugin` array: `opencode-mnemosyne` (memory: SQLite + FTS5 + sqlite-vec) and `opencode-anthropic-oauth`. Note: `package.json` declares only `@opencode-ai/plugin` and `opencode-mnemosyne` as deps, and `package.json` itself is gitignored.
+**Plugins:** Loaded via `opencode.json` `plugin` array. OpenCode v2 requires plugins to export a default `{ id, setup | effect }` object — v1-style function exports fail with `PluginModule.LoadError`.
+- `@andrzejchm/opencode-anthropic-auth@2.3.0` (pinned) — Claude Pro/Max OAuth; maintained fork of the abandoned `opencode-anthropic-oauth` (v1-only). Imports existing logins from the old plugin. CLI: `oc-anthropic` (optional).
+- `plugins/mnemoteca.js` — memory plugin: fork `jabbas/opencode-mnemoteca` (branch `opencode-v2`) as submodule `opencode-mnemoteca/`, loaded via **file symlink** `plugins/mnemoteca.js` → `../opencode-mnemoteca/dist/index.js` (not in the `plugin` array; v2.0.22 silently skips a directory plugin whose entry is only in `package.json#main`). The symlink is dangling until built: run `(cd opencode-mnemoteca && npm ci && npm run build)` after cloning and after every submodule update. Needs the binary `brew install gandazgul/tap/mnemoteca`; data in `~/.local/share/mnemoteca/mnemoteca.db`. Replaces the old `opencode-mnemosyne` (v1-only).
+
+**OpenCode install:** via Homebrew formula `anomalyco/tap/opencode-v2` (conflicts with homebrew-core `opencode` — only one can be installed). homebrew-core's `opencode` formula and the opencode.ai install script track the 1.x line; v2 binary releases live only in the anomalyco tap. Note: `package.json` declares only `@opencode-ai/plugin` as a dep, and `package.json` itself is gitignored.
 
 ## Build / Lint / Test Commands
 
