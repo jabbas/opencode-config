@@ -175,7 +175,7 @@ scripts/audit-bash-permissions.py --from-json export.json  # reuse an export
 - **Default model:** `anthropic/claude-sonnet-4-6`
 - **Small model:** `anthropic/claude-haiku-4-5`
 - **Instructions:** `docs/global-rules.md`, `docs/memory-rules.md`
-- **Compaction:** Auto and prune enabled with 10k reserved tokens
+- **Compaction:** Auto enabled with 10k reserved tokens
 - **Permissions:** `edit`/`bash` default to `ask`; safe read-only commands auto-allowed globally
 - **Secrets:** Referenced via `{file:...}` syntax — actual values in `secrets/` (gitignored)
 - **MCP servers:** context7 (remote), github (npx, disabled), playwright (npx), pdf-reader (npx, disabled), homeassistant (remote), chrome-devtools (npx), firecrawl (npx, self-hosted), dart-mcp-server (disabled), grafana-dev/grafana-test/grafana-stage (`mcp-grafana` via Homebrew, read-only `--disable-write`; prod not wired — no service account)

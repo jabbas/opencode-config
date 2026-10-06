@@ -6,7 +6,6 @@
   ],
   "compaction": {
     "auto": true,
-    "prune": true,
     "reserved": 10000
   },
   "plugin": [
@@ -370,7 +369,7 @@
     },
     "autopilot": {
       "mode": "primary",
-      "model": "anthropic/claude-sonnet-5",
+      "model": "anthropic/claude-sonnet-5-5",
       "permission": {
         "bash": "deny",
         "edit": {
@@ -450,7 +449,7 @@
       }
     },
     "architect": {
-      "model": "anthropic/claude-opus-5",
+      "model": "anthropic/claude-opus-5-5",
       "permission": {
         "bash": "deny",
         "task": {
