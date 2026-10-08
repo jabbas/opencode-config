@@ -178,8 +178,8 @@ scripts/audit-bash-permissions.py --from-json export.json  # reuse an export
 - **Compaction:** Auto and prune enabled with 10k reserved tokens
 - **Permissions:** `edit`/`bash` default to `ask`; safe read-only commands auto-allowed globally
 - **Secrets:** Referenced via `{file:...}` syntax — actual values in `secrets/` (gitignored)
-- **MCP servers:** context7 (remote), github (npx, disabled), playwright (npx), pdf-reader (npx, disabled), homeassistant (remote), chrome-devtools (npx), firecrawl (npx, self-hosted), dart-mcp-server (disabled)
-- **Global tool disables:** `playwright_*`, `homeassistant_*`, `chrome-devtools_*`, `firecrawl_*`, `webfetch` — re-enabled per-agent as needed
+- **MCP servers:** context7 (remote), github (npx, disabled), playwright (npx), pdf-reader (npx, disabled), homeassistant (remote), chrome-devtools (npx), firecrawl (npx, self-hosted), dart-mcp-server (disabled), grafana-dev/grafana-test/grafana-stage (`mcp-grafana` via Homebrew, read-only `--disable-write`; prod not wired — no service account)
+- **Global tool disables:** `playwright_*`, `homeassistant_*`, `chrome-devtools_*`, `firecrawl_*`, `grafana-dev_*`, `grafana-test_*`, `grafana-stage_*`, `webfetch` — re-enabled per-agent as needed (the three grafana-* tool sets are enabled only on `debugger`)
 
 ## Error Handling Patterns
 

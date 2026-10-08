@@ -32,6 +32,11 @@ Kubernetes debugging tools:
 - Flux: flux get all, flux logs, flux reconcile --dry-run
 - Helm: helm status, helm history, helm get manifest
 
+Grafana MCP (read-only):
+- Servers `grafana-dev` / `grafana-test` / `grafana-stage` — dev/test/stage only. **prod is not wired** (no service account yet).
+- Read-only: Viewer service account (`grafana-ai-token`) plus `--disable-write`, so all mutating tools are rejected.
+- Use for dashboards, Prometheus (PromQL) queries, Loki log queries, and alert inspection when kubectl-only evidence is insufficient.
+
 Application debugging:
 - Read source code to understand expected vs actual behavior
 - Search for error messages and stack traces

@@ -339,6 +339,9 @@
     "firecrawl_*": false,
     "jira_*": false,
     "stitch_*": false,
+    "grafana-dev_*": false,
+    "grafana-test_*": false,
+    "grafana-stage_*": false,
     "webfetch": false,
     "WebFetch": false
   },
@@ -465,6 +468,11 @@
       }
     },
     "debugger": {
+      "tools": {
+        "grafana-dev_*": true,
+        "grafana-test_*": true,
+        "grafana-stage_*": true
+      },
       "permission": {
         "task": {
           "*": "allow",
@@ -926,6 +934,36 @@
       "enabled": true,
       "environment": {
         "STITCH_QUOTA_PROJECT": "stich-for-ai"
+      }
+    },
+    "grafana-dev": {
+      "type": "local",
+      "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
+      "enabled": true,
+      "environment": {
+        "GRAFANA_URL": "https://grafana.dev.admiralbet.dev/",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:secrets/grafana-dev.token}",
+        "DO_NOT_TRACK": "1"
+      }
+    },
+    "grafana-test": {
+      "type": "local",
+      "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
+      "enabled": true,
+      "environment": {
+        "GRAFANA_URL": "https://grafana.test.admiralbet.dev/",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:secrets/grafana-test.token}",
+        "DO_NOT_TRACK": "1"
+      }
+    },
+    "grafana-stage": {
+      "type": "local",
+      "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
+      "enabled": true,
+      "environment": {
+        "GRAFANA_URL": "https://grafana.stage.admiralbet.dev/",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:secrets/grafana-stage.token}",
+        "DO_NOT_TRACK": "1"
       }
     }
   }
