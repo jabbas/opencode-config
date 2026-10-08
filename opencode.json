@@ -9,7 +9,8 @@
     "reserved": 10000
   },
   "plugin": [
-    "@andrzejchm/opencode-anthropic-auth@2.3.0"
+    "@andrzejchm/opencode-anthropic-auth@2.3.0",
+    "@dragenetlabs/opencode-kilo-gateway"
   ],
   "permission": {
     "edit": "ask",
