@@ -342,6 +342,7 @@
     "grafana-dev_*": false,
     "grafana-test_*": false,
     "grafana-stage_*": false,
+    "grafana-prod_*": false,
     "webfetch": false,
     "WebFetch": false
   },
@@ -471,7 +472,8 @@
       "tools": {
         "grafana-dev_*": true,
         "grafana-test_*": true,
-        "grafana-stage_*": true
+        "grafana-stage_*": true,
+        "grafana-prod_*": true
       },
       "permission": {
         "task": {
@@ -963,6 +965,16 @@
       "environment": {
         "GRAFANA_URL": "https://grafana.stage.admiralbet.dev/",
         "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-stage.token}",
+        "DO_NOT_TRACK": "1"
+      }
+    },
+    "grafana-prod": {
+      "type": "local",
+      "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
+      "enabled": true,
+      "environment": {
+        "GRAFANA_URL": "https://grafana.prod.admiralbet.dev/",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-prod.token}",
         "DO_NOT_TRACK": "1"
       }
     }
