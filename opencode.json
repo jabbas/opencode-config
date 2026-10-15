@@ -952,7 +952,7 @@
       "enabled": true,
       "environment": {
         "GRAFANA_URL": "https://grafana.test.admiralbet.dev/",
-        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:secrets/grafana-test.token}",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-test.token}",
         "DO_NOT_TRACK": "1"
       }
     },
@@ -962,7 +962,7 @@
       "enabled": true,
       "environment": {
         "GRAFANA_URL": "https://grafana.stage.admiralbet.dev/",
-        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:secrets/grafana-stage.token}",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-stage.token}",
         "DO_NOT_TRACK": "1"
       }
     }
