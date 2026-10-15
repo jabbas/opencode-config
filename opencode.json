@@ -942,7 +942,7 @@
       "enabled": true,
       "environment": {
         "GRAFANA_URL": "https://grafana.dev.admiralbet.dev/",
-        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:secrets/grafana-dev.token}",
+        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-dev.token}",
         "DO_NOT_TRACK": "1"
       }
     },

@@ -51,4 +51,30 @@ kubectl --context sm-stage -n monitoring get secret grafana-ai-token -o jsonpath
 `grafana-prod` MCP server and no `grafana-prod.token` file. Do not add one until the
 service account is created in prod.
 
+## Canonical per-user Grafana MCP tokens (`~/.config/mcp-secrets/`)
+
+The **per-user** Grafana MCP token (from `Secret/grafana-mcp-<user>` in ns
+`monitoring`, created by the reconciler) lives at a **tool-agnostic, canonical**
+path outside this repo:
+
+```
+~/.config/mcp-secrets/grafana-<env>.token   # mode 0600, 46-char glsa_…
+```
+
+This path is shared by **any** MCP client — opencode, claude-code, codex — each
+consuming it via the `GRAFANA_SERVICE_ACCOUNT_TOKEN` env var. opencode references it
+directly in `opencode.json` with an absolute `{file:~/…}` path (e.g. `grafana-dev`
+uses `{file:~/.config/mcp-secrets/grafana-dev.token}`). It is outside every git repo,
+so it can never be committed.
+
+```bash
+mkdir -p ~/.config/mcp-secrets
+kubectl --context sm-dev -n monitoring get secret grafana-mcp-<user> \
+  -o jsonpath='{.data.token}' | base64 -d > ~/.config/mcp-secrets/grafana-dev.token
+chmod 600 ~/.config/mcp-secrets/grafana-dev.token
+```
+
+(Names under `secrets/` above remain the **shared** service-account tokens used by
+`grafana-test`/`grafana-stage` until their per-user rollout.)
+
 All files in this directory except `README.md` are gitignored.
