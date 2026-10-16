@@ -103,13 +103,16 @@ head -5 superpowers/skills/<skill-name>/SKILL.md
 ```
 
 ### Skill Whitelist Consistency Check
-Verifies every `permission.skill: allow` entry in `opencode.json` resolves to a
-real skill on disk (or a known built-in, or a wildcard match). Run after editing
-agent whitelists or updating skill submodules — catches silent drift when a skill
-is renamed/removed upstream. Orphan skills (no agent whitelists them) are reported
-as `[INFO]`, not failures.
+Verifies every non-`deny` `permission.skill` entry in `opencode.json` resolves to a
+skill **ID** OpenCode v2 discovers (or a built-in `opencode`/`report`, or a wildcard
+match). Mirrors v2 discovery: only `skill/` and `skills/` (symlinks followed) plus
+config `skills` paths; ID = parent dir of `SKILL.md`, not the frontmatter `name:`.
+Run after editing agent whitelists or updating skill submodules — catches silent
+drift when a skill is renamed/removed upstream. Duplicate IDs are `[WARN]`, orphan
+skills (no agent whitelists them) `[INFO]`; neither fails.
 ```bash
-bash scripts/check-skill-whitelists.sh   # exit 0 = OK, exit 1 = dead entries
+bash scripts/check-skill-whitelists.sh        # exit 0 = OK, exit 1 = dead entries
+bash scripts/test-check-skill-whitelists.sh   # fixture test for the checker
 ```
 
 ### Permission Audit (what commands actually run)
