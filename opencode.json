@@ -954,46 +954,6 @@
       "environment": {
         "STITCH_QUOTA_PROJECT": "stich-for-ai"
       }
-    },
-    "grafana-dev": {
-      "type": "local",
-      "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
-      "enabled": true,
-      "environment": {
-        "GRAFANA_URL": "https://grafana.dev.admiralbet.dev/",
-        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-dev.token}",
-        "DO_NOT_TRACK": "1"
-      }
-    },
-    "grafana-test": {
-      "type": "local",
-      "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
-      "enabled": true,
-      "environment": {
-        "GRAFANA_URL": "https://grafana.test.admiralbet.dev/",
-        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-test.token}",
-        "DO_NOT_TRACK": "1"
-      }
-    },
-    "grafana-stage": {
-      "type": "local",
-      "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
-      "enabled": true,
-      "environment": {
-        "GRAFANA_URL": "https://grafana.stage.admiralbet.dev/",
-        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-stage.token}",
-        "DO_NOT_TRACK": "1"
-      }
-    },
-    "grafana-prod": {
-      "type": "local",
-      "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
-      "enabled": true,
-      "environment": {
-        "GRAFANA_URL": "https://grafana.prod.admiralbet.dev/",
-        "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-prod.token}",
-        "DO_NOT_TRACK": "1"
-      }
     }
   }
 }

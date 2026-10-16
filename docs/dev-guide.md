@@ -178,8 +178,8 @@ scripts/audit-bash-permissions.py --from-json export.json  # reuse an export
 - **Compaction:** Auto enabled with 10k reserved tokens
 - **Permissions:** `edit`/`bash` default to `ask`; safe read-only commands auto-allowed globally
 - **Secrets:** Referenced via `{file:...}` syntax — actual values in `secrets/` (gitignored)
-- **MCP servers:** context7 (remote), github (npx, disabled), playwright (npx), pdf-reader (npx, disabled), homeassistant (remote), chrome-devtools (npx), firecrawl (npx, self-hosted), dart-mcp-server (disabled), grafana-dev/grafana-test/grafana-stage (`mcp-grafana` via Homebrew, read-only `--disable-write`; prod not wired — no service account)
-- **Global tool disables:** `playwright_*`, `homeassistant_*`, `chrome-devtools_*`, `firecrawl_*`, `grafana-dev_*`, `grafana-test_*`, `grafana-stage_*`, `webfetch` — re-enabled per-agent as needed (the three grafana-* tool sets are enabled only on `debugger`)
+- **MCP servers:** context7 (remote), github (npx, disabled), playwright (npx), pdf-reader (npx, disabled), homeassistant (remote), chrome-devtools (npx), firecrawl (npx, self-hosted), dart-mcp-server (disabled), grafana-dev/grafana-test/grafana-stage/grafana-prod (`mcp-grafana` via Homebrew, read-only `--disable-write`; **work machine only — defined in per-machine `opencode.jsonc`**, because v2 aborts config load on a missing `{file:}` token; snippet in `secrets/README.md`)
+- **Global tool disables:** `playwright_*`, `homeassistant_*`, `chrome-devtools_*`, `firecrawl_*`, `grafana-dev_*`, `grafana-test_*`, `grafana-stage_*`, `grafana-prod_*`, `webfetch` — re-enabled per-agent as needed (the grafana-* tool sets are enabled only on `debugger`)
 
 ## Error Handling Patterns
 

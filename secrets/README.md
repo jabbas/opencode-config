@@ -62,10 +62,62 @@ path outside this repo:
 ```
 
 This path is shared by **any** MCP client — opencode, claude-code, codex — each
-consuming it via the `GRAFANA_SERVICE_ACCOUNT_TOKEN` env var. opencode references it
-directly in `opencode.json` with an absolute `{file:~/…}` path (e.g. `grafana-dev`
-uses `{file:~/.config/mcp-secrets/grafana-dev.token}`). It is outside every git repo,
-so it can never be committed.
+consuming it via the `GRAFANA_SERVICE_ACCOUNT_TOKEN` env var. It is outside every
+git repo, so it can never be committed.
+
+**The `grafana-*` MCP servers are work-machine-only and live in the per-machine
+`opencode.jsonc`, NOT in the shared `opencode.json`.** OpenCode v2 fails the whole
+config load (`ConfigInvalidError`) when a `{file:…}` reference is missing, so a
+shared entry pointing at `~/.config/mcp-secrets/` broke every machine without those
+tokens. The shared `opencode.json` keeps only the tool gating (`grafana-*_*: false`
+globally, `true` on `debugger`), which is harmless where the servers don't exist.
+
+Work machine — merge this into `opencode.jsonc` (deep-merged over `opencode.json`):
+
+```jsonc
+"mcp": {
+  "grafana-dev": {
+    "type": "local",
+    "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
+    "enabled": true,
+    "environment": {
+      "GRAFANA_URL": "https://grafana.dev.admiralbet.dev/",
+      "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-dev.token}",
+      "DO_NOT_TRACK": "1"
+    }
+  },
+  "grafana-test": {
+    "type": "local",
+    "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
+    "enabled": true,
+    "environment": {
+      "GRAFANA_URL": "https://grafana.test.admiralbet.dev/",
+      "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-test.token}",
+      "DO_NOT_TRACK": "1"
+    }
+  },
+  "grafana-stage": {
+    "type": "local",
+    "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
+    "enabled": true,
+    "environment": {
+      "GRAFANA_URL": "https://grafana.stage.admiralbet.dev/",
+      "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-stage.token}",
+      "DO_NOT_TRACK": "1"
+    }
+  },
+  "grafana-prod": {
+    "type": "local",
+    "command": ["/opt/homebrew/bin/mcp-grafana", "-t", "stdio", "--disable-write"],
+    "enabled": true,
+    "environment": {
+      "GRAFANA_URL": "https://grafana.prod.admiralbet.dev/",
+      "GRAFANA_SERVICE_ACCOUNT_TOKEN": "{file:~/.config/mcp-secrets/grafana-prod.token}",
+      "DO_NOT_TRACK": "1"
+    }
+  }
+}
+```
 
 ```bash
 mkdir -p ~/.config/mcp-secrets

@@ -33,8 +33,8 @@ Kubernetes debugging tools:
 - Helm: helm status, helm history, helm get manifest
 
 Grafana MCP (read-only):
-- Servers `grafana-dev` / `grafana-test` / `grafana-stage` — dev/test/stage only. **prod is not wired** (no service account yet).
-- Read-only: Viewer service account (`grafana-ai-token`) plus `--disable-write`, so all mutating tools are rejected.
+- Servers `grafana-dev` / `grafana-test` / `grafana-stage` / `grafana-prod` — **work machine only** (defined in the per-machine `opencode.jsonc`). If the `grafana-*` tools are absent, this machine has no Grafana access; say so and fall back to kubectl.
+- Read-only: per-user Viewer token plus `--disable-write`, so all mutating tools are rejected.
 - Use for dashboards, Prometheus (PromQL) queries, Loki log queries, and alert inspection when kubectl-only evidence is insufficient.
 
 Application debugging:
