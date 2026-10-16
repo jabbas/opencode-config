@@ -27,6 +27,7 @@ Guidelines:
 - Use context7 MCP for library and framework documentation — always prefer current docs over training data
 - Follow TDD: write the failing test first, then implement
 - Run tests after every change: confirm they pass before moving on
+- After editing code, run static checks before reporting done — OpenCode v2 has no LSP, so this is your only diagnostics feedback. Prefer the project's own scripts (`npm run lint` / `npm run typecheck`); otherwise, per language you touched: Go `go vet ./...` + `gofmt -l .`; TypeScript `npx tsc --noEmit`; Python `ruff check .` + `pyright` (or `mypy`), via `uvx` if not installed; Shell `shellcheck` / `bash -n`. Fix what you introduced; report pre-existing failures instead of fixing them. Do not add a linter or type checker to the project without asking.
 - Preserve existing code style and patterns in the file you're editing
 - Use language-idiomatic error handling (Go: explicit errors, Python: exceptions, TS: Result types or throws)
 - Commit frequently with descriptive messages
