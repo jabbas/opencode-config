@@ -719,7 +719,9 @@
           "sandbox-migrate-to-next": "allow",
           "cloudflare-email-service": "allow",
           "turnstile-spin": "allow",
-          "web-perf": "allow"
+          "web-perf": "allow",
+          "cf-cli": "allow",
+          "workers-profiling": "allow"
         }
       }
     },
