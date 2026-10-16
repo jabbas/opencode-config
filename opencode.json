@@ -395,6 +395,7 @@
       }
     },
     "coder": {
+      "mode": "all",
       "permission": {
         "task": {
           "*": "allow",
@@ -451,6 +452,7 @@
       }
     },
     "architect": {
+      "mode": "all",
       "model": "anthropic/claude-opus-5-5",
       "permission": {
         "bash": "deny",
@@ -469,6 +471,7 @@
       }
     },
     "debugger": {
+      "mode": "all",
       "tools": {
         "grafana-dev_*": true,
         "grafana-test_*": true,
@@ -502,6 +505,7 @@
       }
     },
     "devops": {
+      "mode": "all",
       "permission": {
         "task": {
           "*": "allow",
@@ -543,6 +547,7 @@
       }
     },
     "jenkins": {
+      "mode": "all",
       "permission": {
         "bash": {
           "jk --version": "allow",
@@ -580,6 +585,7 @@
       }
     },
     "webdebugger": {
+      "mode": "all",
       "tools": {
         "playwright_*": true,
         "chrome-devtools_*": true
@@ -601,6 +607,7 @@
       }
     },
     "ha": {
+      "mode": "all",
       "tools": {
         "homeassistant_*": true,
         "bash": true
@@ -624,6 +631,7 @@
       }
     },
     "webscraper": {
+      "mode": "all",
       "tools": {
         "firecrawl_firecrawl_scrape": true,
         "firecrawl_firecrawl_map": true,
@@ -645,6 +653,7 @@
       }
     },
     "webresearcher": {
+      "mode": "all",
       "tools": {
         "firecrawl_firecrawl_search": true,
         "firecrawl_firecrawl_search_feedback": true,
@@ -666,6 +675,7 @@
       }
     },
     "webmonitor": {
+      "mode": "all",
       "tools": {
         "firecrawl_firecrawl_monitor_create": true,
         "firecrawl_firecrawl_monitor_get": true,
@@ -689,6 +699,7 @@
       }
     },
     "cloudflare": {
+      "mode": "all",
       "permission": {
         "task": {
           "*": "allow",
@@ -711,6 +722,7 @@
       }
     },
     "frontend": {
+      "mode": "all",
       "permission": {
         "task": {
           "*": "allow",
@@ -745,6 +757,7 @@
       }
     },
     "stitch": {
+      "mode": "all",
       "tools": {
         "stitch_*": true
       },
@@ -769,6 +782,7 @@
       }
     },
     "writer": {
+      "mode": "all",
       "permission": {
         "task": {
           "*": "allow",
@@ -788,6 +802,7 @@
       }
     },
     "skill-smith": {
+      "mode": "all",
       "permission": {
         "task": {
           "*": "allow",
@@ -804,6 +819,7 @@
       }
     },
     "jira": {
+      "mode": "all",
       "tools": {
         "jira_*": true
       },
@@ -821,6 +837,7 @@
       }
     },
     "stitch-mcp": {
+      "mode": "all",
       "tools": {
         "stitch_*": true
       },
