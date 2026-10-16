@@ -48,18 +48,23 @@
 4. `mnemoteca` exits non-zero / writes stderr → v2 surfaces the same error message as v1 (thrown `Error(stderr)`), OpenCode not crashed. Test in Task 3.
 5. Old `opencode-mnemosyne` and new plugin both configured → duplicate tools / double instructions. Prevented by Task 5 config cleanup; verified by Task 5 smoke log (one mnemoteca plugin, no LoadError).
 
+## Status (2026-10-16)
+
+- Tasks 0–5 done: fork `jabbas/opencode-mnemoteca` branch `opencode-v2` (83c2db7, a581ee3, 0c6562d; tests green); private-machine migration done (63 collections exported; DB now 66/241 incl. later memories; legacy DB and backup kept); config wired in c0ab757; upstream PR open: https://github.com/gandazgul/opencode-mnemoteca/pull/1 (awaiting review).
+- Remaining: Task 6 (work machine) and "After merge".
+
 ---
 
 ### Task 0: Preparation (sources, prior work, baseline)
 
 **Files:** none changed.
 
-- [ ] **Step 1:** `git -C ~/Projects/opencode fetch --tags && git -C ~/Projects/opencode worktree add ../opencode-v2.0.22 v2.0.22`. Expected: `~/Projects/opencode-v2.0.22/packages/plugin/src/promise/tool.ts` exists.
-- [ ] **Step 2:** Verify spec §3 in the v2.0.22 worktree: default-export validation (`packages/core/src/plugin/module.ts`), `codemode` option (`packages/schema/src/tool.ts`), `ToolContext.signal`, `Context.location` (`packages/plugin/src/promise/plugin.ts`), `session.hook("context")` + `system` array (`packages/plugin/src/promise/session.ts`). Also record whether `Context` offers a logging facility (for Task 3 logger). Any mismatch → STOP, report to architect.
-- [ ] **Step 3:** In `~/Projects/opencode` (1.18.34) find the loader branch handling `default` with `id`/`server` and whether it also calls `default.setup`; record file:line.
-- [ ] **Step 4:** Prior work: `gh pr list -R gandazgul/opencode-mnemoteca --state all`, `gh issue list -R gandazgul/opencode-mnemoteca --state all` (and same for `gandazgul/mnemoteca`); search `v2`, `opencode 2`, `setup`, `LoadError`. Open v2 work → STOP, report to human. Record default branch: `gh repo view gandazgul/opencode-mnemoteca --json defaultBranchRef`.
-- [ ] **Step 5:** In `~/Projects/opencode-mnemoteca`: `git remote add upstream https://github.com/gandazgul/opencode-mnemoteca.git && git fetch upstream`; confirm `main` == `upstream/<default>` (`git log -1` both); `git checkout -b opencode-v2`.
-- [ ] **Step 6:** Baseline: `npm ci && npm test && npm run ci`. Expected: all 4 existing tests pass, `dist/index.js` built.
+- [x] **Step 1:** `git -C ~/Projects/opencode fetch --tags && git -C ~/Projects/opencode worktree add ../opencode-v2.0.22 v2.0.22`. Expected: `~/Projects/opencode-v2.0.22/packages/plugin/src/promise/tool.ts` exists.
+- [x] **Step 2:** Verify spec §3 in the v2.0.22 worktree: default-export validation (`packages/core/src/plugin/module.ts`), `codemode` option (`packages/schema/src/tool.ts`), `ToolContext.signal`, `Context.location` (`packages/plugin/src/promise/plugin.ts`), `session.hook("context")` + `system` array (`packages/plugin/src/promise/session.ts`). Also record whether `Context` offers a logging facility (for Task 3 logger). Any mismatch → STOP, report to architect.
+- [x] **Step 3:** In `~/Projects/opencode` (1.18.34) find the loader branch handling `default` with `id`/`server` and whether it also calls `default.setup`; record file:line.
+- [x] **Step 4:** Prior work: `gh pr list -R gandazgul/opencode-mnemoteca --state all`, `gh issue list -R gandazgul/opencode-mnemoteca --state all` (and same for `gandazgul/mnemoteca`); search `v2`, `opencode 2`, `setup`, `LoadError`. Open v2 work → STOP, report to human. Record default branch: `gh repo view gandazgul/opencode-mnemoteca --json defaultBranchRef`.
+- [x] **Step 5:** In `~/Projects/opencode-mnemoteca`: `git remote add upstream https://github.com/gandazgul/opencode-mnemoteca.git && git fetch upstream`; confirm `main` == `upstream/<default>` (`git log -1` both); `git checkout -b opencode-v2`.
+- [x] **Step 6:** Baseline: `npm ci && npm test && npm run ci`. Expected: all 4 existing tests pass, `dist/index.js` built.
 
 ### Task 1: Extract `src/core.ts` (pure refactor)
 
@@ -77,17 +82,17 @@
 - `TOOLS: readonly ToolSpec[]` — the 5 tools in v1 order with v1 descriptions, arg descriptions, query quoting, `--tag core`, global init, `"No memories found."` / `"No global memories found."`, `.trim()`.
 - `MEMORY_INSTRUCTIONS: string` — exact v1 compaction text (lines 206–217).
 
-- [ ] **Step 1:** Write `src/core.test.ts` (same `installBunBoundary` pattern as `index.test.ts`, extended to record `options.signal`):
+- [x] **Step 1:** Write `src/core.test.ts` (same `installBunBoundary` pattern as `index.test.ts`, extended to record `options.signal`):
   - `projectName maps global and trailing slash`: `projectName("/x/global/") === "default"`, `projectName("/tmp/my repo ż/") === "my repo ż"`, `projectName("/") === "default"`.
   - `run omits signal when undefined`: recorded options have no `signal` key.
   - `run forwards signal`: recorded `options.signal === controller.signal`.
   - `run throws stderr on non-zero exit`: stub `exited: 3`, `stderr: "boom"` → rejects with `Error("boom")`.
   - `run returns install guidance when spawn throws ENOENT`: stub throws `new Error("ENOENT")` → resolves to the exact missing-binary message.
   - `TOOLS order and names`: `TOOLS.map(t => t.name)` equals `["memory_recall","memory_recall_global","memory_store","memory_store_global","memory_delete"]`.
-- [ ] **Step 2:** `npm test` → FAIL (module missing).
-- [ ] **Step 3:** Implement `src/core.ts`; rewrite `src/index.ts` to build v1 `tool({...})` entries by mapping `TOOLS` (`args` → `tool.schema.string()/number()/boolean()` + `.optional()` + `.describe()`), logger from `client.app.log`, compaction hook pushes `MEMORY_INSTRUCTIONS`.
-- [ ] **Step 4:** `npm test && npm run ci` → PASS; `git diff upstream/main -- src/index.test.ts` empty.
-- [ ] **Step 5:** `git add src package.json && git commit -m "refactor: extract zero-dependency core shared by adapters"`.
+- [x] **Step 2:** `npm test` → FAIL (module missing).
+- [x] **Step 3:** Implement `src/core.ts`; rewrite `src/index.ts` to build v1 `tool({...})` entries by mapping `TOOLS` (`args` → `tool.schema.string()/number()/boolean()` + `.optional()` + `.describe()`), logger from `client.app.log`, compaction hook pushes `MEMORY_INSTRUCTIONS`.
+- [x] **Step 4:** `npm test && npm run ci` → PASS; `git diff upstream/main -- src/index.test.ts` empty.
+- [x] **Step 5:** `git add src package.json && git commit -m "refactor: extract zero-dependency core shared by adapters"`.
 
 ### Task 2: v2 adapter + dual export
 
@@ -102,7 +107,7 @@
 - `toJsonSchema(spec: ToolSpec): object` — `{ type:"object", properties: {k: {type, description}}, required: <non-optional keys>, additionalProperties:false }`.
 - Logger: the v2 logging facility found in Task 0 Step 2, else a no-op logger (never `console.*` — it corrupts the TUI).
 
-- [ ] **Step 1:** Write `src/v2.test.ts` with `fakeV2Ctx(dir)` recording `tools.add` and `session.hook` calls, plus the Bun boundary stub:
+- [x] **Step 1:** Write `src/v2.test.ts` with `fakeV2Ctx(dir)` recording `tools.add` and `session.hook` calls, plus the Bun boundary stub:
   - `registers five tools with codemode false`: names equal `TOOLS` names; every `options.codemode === false`, `input.type === "object"`, `input.additionalProperties === false`.
   - `schemas mirror v1 args`: `memory_store.input.required` = `["content"]`, properties `content`(string), `core`(boolean); `memory_delete.input.properties.id.type === "number"`.
   - `execute returns content and uses location cwd`: `memory_recall.execute({query:"x"}, {signal})` → `{ content: "ok" }`; spawn `command` = `["mnemoteca","search","--name","acme","--format","plain","\"x\""]`, `options.cwd === "/tmp/acme"`, `options.signal === signal`.
@@ -114,24 +119,24 @@
   - `guard: v1-shaped ctx does nothing`: `setup({directory:"/tmp/a", client:{}})` resolves; zero spawns, no throws.
   - `missing binary`: stub spawn throws `ENOENT` → `setup` resolves; `execute` → `{ content: <exact v1 missing-binary message> }`.
   - `default export shape`: `id === "mnemoteca"`, `server === MnemotecaPlugin`, `typeof setup === "function"`.
-- [ ] **Step 2:** `npm test` → FAIL.
-- [ ] **Step 3:** Implement `src/v2.ts`: guard (`typeof ctx?.tool?.transform !== "function" || typeof ctx?.session?.hook !== "function"` → return) → `dir = ctx.location.directory` → `ensureCollection(["init","--name",projectName(dir)])` → `ctx.tool.transform(t => TOOLS.forEach(s => t.add({...})))` with `execute: async (input, tctx) => ({ content: await s.execute(input, { project, opts: { cwd: dir, log, signal: tctx?.signal } }) })` → `ctx.session.hook("context", e => { e.system.push({ type:"text", text: MEMORY_INSTRUCTIONS }) })`. Add default export to `src/index.ts`.
-- [ ] **Step 4:** `npm test && npm run ci` → PASS; `grep -n "export default" dist/index.js` present; `dist/v2.js`, `dist/core.js` exist; `index.test.ts` still unmodified.
-- [ ] **Step 5:** README: "OpenCode v2" section — install (submodule/path or npm once published; v2 key `plugins`, legacy `plugin` also read), `codemode:false`, instructions injected each turn (v2 has no compaction-context equivalent that survives summary), v1 unchanged.
-- [ ] **Step 6:** `git add src package.json README.md && git commit -m "feat: support OpenCode v2 plugin API (dual export, v1 unchanged)" && git push -u origin opencode-v2`.
+- [x] **Step 2:** `npm test` → FAIL.
+- [x] **Step 3:** Implement `src/v2.ts`: guard (`typeof ctx?.tool?.transform !== "function" || typeof ctx?.session?.hook !== "function"` → return) → `dir = ctx.location.directory` → `ensureCollection(["init","--name",projectName(dir)])` → `ctx.tool.transform(t => TOOLS.forEach(s => t.add({...})))` with `execute: async (input, tctx) => ({ content: await s.execute(input, { project, opts: { cwd: dir, log, signal: tctx?.signal } }) })` → `ctx.session.hook("context", e => { e.system.push({ type:"text", text: MEMORY_INSTRUCTIONS }) })`. Add default export to `src/index.ts`.
+- [x] **Step 4:** `npm test && npm run ci` → PASS; `grep -n "export default" dist/index.js` present; `dist/v2.js`, `dist/core.js` exist; `index.test.ts` still unmodified.
+- [x] **Step 5:** README: "OpenCode v2" section — install (submodule/path or npm once published; v2 key `plugins`, legacy `plugin` also read), `codemode:false`, instructions injected each turn (v2 has no compaction-context equivalent that survives summary), v1 unchanged.
+- [x] **Step 6:** `git add src package.json README.md && git commit -m "feat: support OpenCode v2 plugin API (dual export, v1 unchanged)" && git push -u origin opencode-v2`.
 
 ### Task 3: Data migration — private machine
 
 Follows `~/Projects/mnemoteca/docs/migrate-from-mnemosyne.md` Path 2. **Human runs or explicitly approves each command.** Close all OpenCode sessions first (execute from a plain terminal or with the human driving).
 
-- [ ] **Step 1:** Record old state: `~/bin/mnemosyne stats` → single `Database Path:` line + counts (expected 219 documents / 63 collections).
-- [ ] **Step 2:** Backup: `tar czf ~/mnemosyne-backup-2026-10-04.tgz -C ~/.local/share mnemosyne`; `tar tzf ~/mnemosyne-backup-2026-10-04.tgz | grep mnemosyne.db` non-empty.
-- [ ] **Step 3:** Install: `brew install gandazgul/tap/mnemoteca` (not `install.sh`); `mnemoteca --version`; `mnemoteca setup` if `stats` reports missing models/ONNX runtime.
-- [ ] **Step 4:** `mkdir -p ~/.mnemoteca-migration-exports/manual-mnemosyne-export` (must be empty); `~/bin/mnemosyne export --all --yes --output ~/.mnemoteca-migration-exports/manual-mnemosyne-export`.
-- [ ] **Step 5:** Count export: number of `*.jsonl` = collections; sum of (lines − 1) = documents. Must equal Step 1. Include dot-named collections (e.g. `.talos.jsonl` — zsh `*.jsonl` globs skip them) and count a last line without trailing newline: `find . -maxdepth 1 -name '*.jsonl' | wc -l` and `find . -maxdepth 1 -name '*.jsonl' -exec sh -c 'echo $(( $(grep -c "" "$1") - 1 ))' _ {} \; | paste -sd+ - | bc`.
-- [ ] **Step 6:** `mnemoteca stats --format json` → `collection_count: 0`, `document_count: 0`, `database_path` ≠ old `Database Path:` (after resolving symlinks). Else STOP.
-- [ ] **Step 7:** `mnemoteca import --dir ~/.mnemoteca-migration-exports/manual-mnemosyne-export` — exactly once.
-- [ ] **Step 8:** `mnemoteca stats --format json` counts equal Step 5; `mnemoteca search --fts-only --no-rerank --limit 5 "<known global memory>"` and one project memory return the expected text. Mismatch → STOP: destination is partial, do not re-import, report to human.
+- [x] **Step 1:** Record old state: `~/bin/mnemosyne stats` → single `Database Path:` line + counts (expected 219 documents / 63 collections).
+- [x] **Step 2:** Backup: `tar czf ~/mnemosyne-backup-2026-10-04.tgz -C ~/.local/share mnemosyne`; `tar tzf ~/mnemosyne-backup-2026-10-04.tgz | grep mnemosyne.db` non-empty.
+- [x] **Step 3:** Install: `brew install gandazgul/tap/mnemoteca` (not `install.sh`); `mnemoteca --version`; `mnemoteca setup` if `stats` reports missing models/ONNX runtime.
+- [x] **Step 4:** `mkdir -p ~/.mnemoteca-migration-exports/manual-mnemosyne-export` (must be empty); `~/bin/mnemosyne export --all --yes --output ~/.mnemoteca-migration-exports/manual-mnemosyne-export`.
+- [x] **Step 5:** Count export: number of `*.jsonl` = collections; sum of (lines − 1) = documents. Must equal Step 1. Include dot-named collections (e.g. `.talos.jsonl` — zsh `*.jsonl` globs skip them) and count a last line without trailing newline: `find . -maxdepth 1 -name '*.jsonl' | wc -l` and `find . -maxdepth 1 -name '*.jsonl' -exec sh -c 'echo $(( $(grep -c "" "$1") - 1 ))' _ {} \; | paste -sd+ - | bc`.
+- [x] **Step 6:** `mnemoteca stats --format json` → `collection_count: 0`, `document_count: 0`, `database_path` ≠ old `Database Path:` (after resolving symlinks). Else STOP.
+- [x] **Step 7:** `mnemoteca import --dir ~/.mnemoteca-migration-exports/manual-mnemosyne-export` — exactly once.
+- [x] **Step 8:** `mnemoteca stats --format json` counts equal Step 5; `mnemoteca search --fts-only --no-rerank --limit 5 "<known global memory>"` and one project memory return the expected text. Mismatch → STOP: destination is partial, do not re-import, report to human.
 
 ### Task 4: Wire plugin into config repo + live smoke (private machine)
 
@@ -139,18 +144,18 @@ Follows `~/Projects/mnemoteca/docs/migrate-from-mnemosyne.md` Path 2. **Human ru
 
 > Ruling 5 (final review, verified live): v2.0.22 silently skips a **directory** plugin whose entry is only in `package.json#main` (`Host.resolve` tries `<dir>/server`, `<dir>/index` only). Use a **file** symlink to `dist/index.js`.
 
-- [ ] **Step 1:** `git submodule add -b opencode-v2 https://github.com/jabbas/opencode-mnemoteca.git opencode-mnemoteca`; `(cd opencode-mnemoteca && npm ci && npm run build)`; `ln -s ../opencode-mnemoteca/dist/index.js plugins/mnemoteca.js` (dangling until built — dev-guide must say so).
-- [ ] **Step 2:** Remove `"opencode-mnemosyne"` from `plugin` in `opencode.json` and from `package.json`; `jq . opencode.json` parses.
-- [ ] **Step 3:** `docs/dev-guide.md` (read it first, follow its conventions): replace the `opencode-mnemosyne` bullet with the mnemoteca fork entry (submodule + symlink, rebuild `npm ci && npm run build` after every submodule update, binary `brew install gandazgul/tap/mnemoteca`, data `~/.local/share/mnemoteca/mnemoteca.db`); add `opencode-mnemoteca/` to the layout tree; update the "Memory config" row; fix the `package.json` deps note.
-- [ ] **Step 4:** Smoke in a fresh `opencode` session in `~/.config/opencode`: log shows mnemoteca plugin loaded once, no `LoadError`; agent calls `memory_recall_global` (returns a migrated memory), `memory_store` ("smoke test 2026-10-04"), `memory_recall` (finds it), `memory_delete` (removes it). Save transcript excerpt + log lines to `~/Projects/opencode-mnemoteca/.pr-evidence.md` (not committed) for the PR.
-- [ ] **Step 5:** `git add .gitmodules opencode-mnemoteca plugins/mnemoteca.js opencode.json docs/dev-guide.md && git commit -m "feat: switch memory plugin to mnemoteca v2 fork"`.
+- [x] **Step 1:** `git submodule add -b opencode-v2 https://github.com/jabbas/opencode-mnemoteca.git opencode-mnemoteca`; `(cd opencode-mnemoteca && npm ci && npm run build)`; `ln -s ../opencode-mnemoteca/dist/index.js plugins/mnemoteca.js` (dangling until built — dev-guide must say so).
+- [x] **Step 2:** Remove `"opencode-mnemosyne"` from `plugin` in `opencode.json` and from `package.json`; `jq . opencode.json` parses.
+- [x] **Step 3:** `docs/dev-guide.md` (read it first, follow its conventions): replace the `opencode-mnemosyne` bullet with the mnemoteca fork entry (submodule + symlink, rebuild `npm ci && npm run build` after every submodule update, binary `brew install gandazgul/tap/mnemoteca`, data `~/.local/share/mnemoteca/mnemoteca.db`); add `opencode-mnemoteca/` to the layout tree; update the "Memory config" row; fix the `package.json` deps note.
+- [x] **Step 4:** Smoke in a fresh `opencode` session in `~/.config/opencode`: log shows mnemoteca plugin loaded once, no `LoadError`; agent calls `memory_recall_global` (returns a migrated memory), `memory_store` ("smoke test 2026-10-04"), `memory_recall` (finds it), `memory_delete` (removes it). Save transcript excerpt + log lines to `~/Projects/opencode-mnemoteca/.pr-evidence.md` (not committed) for the PR.
+- [x] **Step 5:** `git add .gitmodules opencode-mnemoteca plugins/mnemoteca.js opencode.json docs/dev-guide.md && git commit -m "feat: switch memory plugin to mnemoteca v2 fork"`.
 
 ### Task 5: Upstream PR (HARD GATE)
 
-- [ ] **Step 1:** In `~/Projects/opencode-mnemoteca`: `git fetch upstream && git rebase upstream/<default>`; `npm test && npm run ci` green; `git push --force-with-lease`.
-- [ ] **Step 2:** Draft PR body in `$TMPDIR/pr-body.md`: problem (exact `Plugin must export a default definition…` error on OpenCode v2.0.22), change (core extraction, `src/v2.ts`, dual export; v1 behavior unchanged — existing tests untouched and green), testing (`npm test`, live v2.0.22 smoke from `.pr-evidence.md`; v1 not run live), prior-work search result (Task 0 Step 4), disclosure (model, harness OpenCode v2.0.22, plugins from `opencode.json`).
-- [ ] **Step 3:** Show the human the full `git diff upstream/<default>...opencode-v2` and the PR body. **Wait for explicit approval.**
-- [ ] **Step 4:** After approval only: `gh pr create -R gandazgul/opencode-mnemoteca --base <default> --head jabbas:opencode-v2 --title "Add OpenCode v2 support (dual export, v1 unchanged)" --body-file "$TMPDIR/pr-body.md"`. Report URL.
+- [x] **Step 1:** In `~/Projects/opencode-mnemoteca`: `git fetch upstream && git rebase upstream/<default>`; `npm test && npm run ci` green; `git push --force-with-lease`.
+- [x] **Step 2:** Draft PR body in `$TMPDIR/pr-body.md`: problem (exact `Plugin must export a default definition…` error on OpenCode v2.0.22), change (core extraction, `src/v2.ts`, dual export; v1 behavior unchanged — existing tests untouched and green), testing (`npm test`, live v2.0.22 smoke from `.pr-evidence.md`; v1 not run live), prior-work search result (Task 0 Step 4), disclosure (model, harness OpenCode v2.0.22, plugins from `opencode.json`).
+- [x] **Step 3:** Show the human the full `git diff upstream/<default>...opencode-v2` and the PR body. **Wait for explicit approval.**
+- [x] **Step 4:** After approval only: `gh pr create -R gandazgul/opencode-mnemoteca --base <default> --head jabbas:opencode-v2 --title "Add OpenCode v2 support (dual export, v1 unchanged)" --body-file "$TMPDIR/pr-body.md"`. Report URL.
 
 ### Task 6: Work machine rollout (on the work machine)
 
