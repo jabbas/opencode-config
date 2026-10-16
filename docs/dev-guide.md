@@ -197,7 +197,7 @@ scripts/audit-bash-permissions.py --from-json export.json  # reuse an export
 | Plugin source | `superpowers/.opencode/plugins/superpowers.js` |
 | Install/migration guide | `superpowers/.opencode/INSTALL.md` |
 | Test runner | `superpowers/tests/opencode/run-tests.sh` |
-| Default agent | `agents/default.md` (name: `general`) |
+| General agent prompt | `agents/general.md` (v2 takes the agent id from the filename, not `name:`) |
 | Skill writing guide | `superpowers/AGENTS.md` |
 | Memory config | Plugin: `plugins/mnemoteca.js` → `opencode-mnemoteca` fork (mnemoteca binary, SQLite + FTS5 + sqlite-vec; DB `~/.local/share/mnemoteca/mnemoteca.db`) |
 | Global rules | `docs/global-rules.md` |

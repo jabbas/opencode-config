@@ -63,7 +63,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 
 | Agent | Purpose |
 |-------|---------|
-| `general` | General-purpose fallback; software + DevOps (default: `agents/default.md`) |
+| `general` | General-purpose fallback; software + DevOps (prompt: `agents/general.md`) |
 | `coder` | Polyglot code — Go, Python, TypeScript, Shell |
 | `architect` | Software/system architecture, ADRs, design, plans (bash: deny; delegates) |
 | `autopilot` | User-only autonomous orchestrator; subagents execute. `bash: deny`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it) + `task: {autopilot: deny}` on root & all delegating agents (enforces it) |
