@@ -81,8 +81,10 @@ bash run-tests.sh --integration --test test-tools.sh
 |------|------|-------------|
 | `test-plugin-loading.sh` | Unit | Plugin installation, structure, symlink |
 | `test-bootstrap-caching.sh` | Unit | Bootstrap caching behavior (uses `test-bootstrap-caching.mjs`) |
-| `test-priority.sh` | Integration | Skill priority resolution |
-| `test-tools.sh` | Integration | use_skill and find_skills tools |
+| `test-session-bootstrap.sh` | Unit | v2 bootstrap injection across sessions (uses `test-session-bootstrap.mjs`) |
+| `test-skill-registration.sh` | Unit | v2 `setup()` skill registration contract (uses `test-skill-registration.mjs`) |
+| `test-priority.sh` | Integration | Duplicate skill-ID behavior (local vs bundled) |
+| `test-tools.sh` | Integration | Native `skill` tool loads personal, project and bundled skills |
 
 ### Skill Triggering Tests
 ```bash
@@ -176,8 +178,7 @@ scripts/audit-bash-permissions.py --from-json export.json  # reuse an export
 
 ## Configuration: opencode.json
 
-- **Default model:** `anthropic/claude-sonnet-4-6`
-- **Small model:** `anthropic/claude-haiku-4-5`
+- **Models:** not set in `opencode.json`; each machine sets `model`/`small_model` in its gitignored `opencode.jsonc` (private machine: `anthropic/claude-sonnet-5-5` / `anthropic/claude-haiku-4-5`). Cross-machine pins in `opencode.json`: `autopilot` (sonnet-5-5), `architect` (opus-5-5)
 - **Instructions:** `docs/global-rules.md`, `docs/memory-rules.md`
 - **Compaction:** Auto enabled with 10k reserved tokens
 - **Permissions:** `edit`/`bash` default to `ask`; safe read-only commands auto-allowed globally
