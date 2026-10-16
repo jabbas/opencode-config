@@ -66,7 +66,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 | `general` | General-purpose fallback; software + DevOps (prompt: `agents/general.md`) |
 | `coder` | Polyglot code — Go, Python, TypeScript, Shell |
 | `architect` | Software/system architecture, ADRs, design, plans (bash: deny; delegates) |
-| `autopilot` | User-only autonomous orchestrator; subagents execute. `bash: deny`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it) + `task: {autopilot: deny}` on root & all delegating agents (enforces it) |
+| `autopilot` | User-only autonomous orchestrator; subagents execute. `bash: deny`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it from the `subagent` tool) + `task: {autopilot: deny}` on all agents |
 | `debugger` | Full-stack debugging, diagnosis only |
 | `devops` | CI/CD, GitHub, Flux, Helm, Kustomize, git ops |
 | `jenkins` | Jenkins controller ops via the `jk` CLI — jobs, runs, logs, config.xml, artifacts, credentials, nodes, plugins. Owns the `jk` skill; all other agents delegate Jenkins actions here |
@@ -91,21 +91,30 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 
 These apply to every agent (this file is injected globally via `Instruction.system`):
 
+- **One level of delegation only.** The coordinator — the agent the user talks to
+  directly — dispatches specialists via the `subagent` tool. A subagent does NOT
+  dispatch further subagents. This is enforced by OpenCode v2's
+  `experimental.subagent_depth` (default `1`, intentionally left unset); a nested
+  call fails with "Subagent depth limit reached".
+- **Running as a subagent and need another specialist or a skill you lack?** Do not
+  try to dispatch. Do what you can within your own tools, then end your reply by
+  telling the coordinator exactly what remains and which agent should do it (e.g.
+  "needs `@jenkins`: trigger job X"). The coordinator does the hand-off.
 - **NEVER delegate to yourself.** If the task falls within your own specialty, DO
   THE WORK DIRECTLY — do not dispatch a subagent of your own type (e.g. `jenkins`
   calling `@jenkins`). Self-dispatch is also hard-blocked: every agent has
   `task: {"<own-name>": "deny"}` in `opencode.json`, so the attempt will fail —
   don't waste a turn trying.
-- **Any agent may delegate to any other agent, except `autopilot` can never be
-  called.** Every agent carries an explicit `task: {"*": "allow", "autopilot":
-  "deny"}` in `opencode.json`. The explicit rule is required because of
-  `subagent-permissions.ts` (`deriveSubagentSessionPermission`): when an agent runs
-  **as a subagent**, opencode injects `task: {"*": "deny"}` UNLESS the agent's own
-  ruleset already contains a `task` rule (`canTask`). So the explicit block is what
-  keeps delegation working at any nesting depth. `autopilot` stays excluded
-  everywhere (it is also `mode: primary`, so it is never dispatchable).
-- **Self-delegation is denied.** Each dispatchable agent denies its own name in
-  `permission.task` to prevent accidental recursive loops.
+- **Any agent may be dispatched, except `autopilot`.** Every agent carries
+  `task: {"*": "allow", "autopilot": "deny", "<own-name>": "deny"}` in
+  `opencode.json` (v2 migrates the v1 `task` permission to `subagent`).
+  `autopilot` is excluded by that rule AND by `mode: primary`.
+- **Dispatchable agents need `"mode": "all"`.** OpenCode v2 defaults agents without
+  a `mode` to `primary`, which hides them from the `subagent` tool ("Agent X cannot
+  run as a subagent") and makes callers fall back to `general`. Every custom agent
+  except `autopilot` and `plan` sets `"mode": "all"` in `opencode.json` — any new
+  agent must too. The agent id comes from the markdown **filename**, not the
+  frontmatter `name:` (`agents/general.md` → `general`).
 - **Jenkins → `@jenkins`.** Any Jenkins controller action — builds/runs, logs, jobs, `config.xml`, artifacts, test reports, credentials, nodes, queues, plugins — goes to `@jenkins`. Do NOT run the `jk` CLI yourself; the `jk` skill is denied to every agent except `jenkins`.
 
 ## Per-Agent Skill Whitelists (token optimization)
@@ -116,17 +125,16 @@ Each agent's visible skills are restricted via `permission.skill` in
 skill is hidden from `<available_skills>` AND blocked from invocation; `allow`/`ask`
 both keep it on the list at full cost (verified: `skill/index.ts:314`,
 `permission/index.ts:86`). **Missing skill → delegate** to the owning specialist
-(`@frontend`, `@stitch`, `@writer`, `@cloudflare`, `@jenkins`, `@skill-smith`). **Every**
-agent carries an explicit `task: {"*": "allow", "autopilot": "deny"}` so delegation
-works even when the agent is itself running as a subagent (see "Delegation Rules"
-above for the `canTask` mechanism).
+(`@frontend`, `@stitch`, `@writer`, `@cloudflare`, `@jenkins`, `@skill-smith`) when
+you are the coordinator; as a subagent, report the need back instead (see
+"Delegation Rules" above — one level only).
 
 Pure MCP operators (`webscraper`, `webresearcher`, `webmonitor`) intentionally
 have zero skills (`{"*": "deny"}`) — no `using-superpowers` either. This is
 deliberate: they are single-purpose Firecrawl operators that don't code, so any
 skill would be dead weight. Do not "fix" this by adding skills. They DO still carry
-the standard `task` delegation rule, so they can hand off to another agent if a job
-falls outside scraping/research/monitoring.
+the standard `task` rule, so when run directly as coordinator they can hand off to
+another agent; as subagents they report out-of-scope work back to the caller.
 
 Full rationale, ownership map, and per-agent skill lists:
 `docs/superpowers/specs/2026-06-13-agent-skill-optimization-design.md`.
