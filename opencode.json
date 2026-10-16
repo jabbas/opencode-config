@@ -18,12 +18,11 @@
       "autopilot": "deny"
     },
     "bash": {
-      "security *": "deny",
-      "/usr/bin/security *": "deny",
-      "sudo security *": "deny",
       "*": "ask",
       "cat *": "allow",
       "echo *": "allow",
+      "test *": "allow",
+      "[ *": "allow",
       "grep *": "allow",
       "wc *": "allow",
       "pwd": "allow",
@@ -329,7 +328,10 @@
       "awk *": "allow",
       "gawk *": "allow",
       "xargs *": "allow",
-      "find *": "allow"
+      "find *": "allow",
+      "security *": "deny",
+      "/usr/bin/security *": "deny",
+      "sudo security *": "deny"
     }
   },
   "tools": {
@@ -348,10 +350,9 @@
   },
   "agent": {
     "plan": {
-      "prompt": "You are in PLAN MODE. Analyze the codebase thoroughly before making any changes. Do not execute any commands or write files. Only provide detailed analysis and plan.",
+      "prompt": "You are in PLAN MODE. Analyze the codebase thoroughly before making any changes. Do not write files; the only shell commands allowed are read-only echo, ls, test and head. Only provide detailed analysis and plan.",
       "steps": 15,
       "tools": {
-        "bash": false,
         "edit": false,
         "write": false
       },
@@ -360,6 +361,15 @@
           "*": "allow",
           "autopilot": "deny",
           "plan": "deny"
+        },
+        "bash": {
+          "*": "deny",
+          "echo *": "allow",
+          "ls *": "allow",
+          "test *": "allow",
+          "[ *": "allow",
+          "head *": "allow",
+          "*>*": "deny"
         },
         "skill": {
           "*": "deny",
@@ -373,7 +383,15 @@
       "mode": "primary",
       "model": "anthropic/claude-sonnet-5-5",
       "permission": {
-        "bash": "deny",
+        "bash": {
+          "*": "deny",
+          "echo *": "allow",
+          "ls *": "allow",
+          "test *": "allow",
+          "[ *": "allow",
+          "head *": "allow",
+          "*>*": "deny"
+        },
         "edit": {
           "*": "deny",
           "docs/superpowers/**": "allow"
@@ -455,7 +473,15 @@
       "mode": "all",
       "model": "anthropic/claude-opus-5-5",
       "permission": {
-        "bash": "deny",
+        "bash": {
+          "*": "deny",
+          "echo *": "allow",
+          "ls *": "allow",
+          "test *": "allow",
+          "[ *": "allow",
+          "head *": "allow",
+          "*>*": "deny"
+        },
         "task": {
           "*": "allow",
           "autopilot": "deny",
@@ -646,7 +672,15 @@
           "autopilot": "deny",
           "webscraper": "deny"
         },
-        "bash": "deny",
+        "bash": {
+          "*": "deny",
+          "echo *": "allow",
+          "ls *": "allow",
+          "test *": "allow",
+          "[ *": "allow",
+          "head *": "allow",
+          "*>*": "deny"
+        },
         "skill": {
           "*": "deny"
         }
@@ -668,7 +702,15 @@
           "autopilot": "deny",
           "webresearcher": "deny"
         },
-        "bash": "deny",
+        "bash": {
+          "*": "deny",
+          "echo *": "allow",
+          "ls *": "allow",
+          "test *": "allow",
+          "[ *": "allow",
+          "head *": "allow",
+          "*>*": "deny"
+        },
         "skill": {
           "*": "deny"
         }
@@ -692,7 +734,15 @@
           "autopilot": "deny",
           "webmonitor": "deny"
         },
-        "bash": "deny",
+        "bash": {
+          "*": "deny",
+          "echo *": "allow",
+          "ls *": "allow",
+          "test *": "allow",
+          "[ *": "allow",
+          "head *": "allow",
+          "*>*": "deny"
+        },
         "skill": {
           "*": "deny"
         }
@@ -834,7 +884,15 @@
         "jira_*": true
       },
       "permission": {
-        "bash": "deny",
+        "bash": {
+          "*": "deny",
+          "echo *": "allow",
+          "ls *": "allow",
+          "test *": "allow",
+          "[ *": "allow",
+          "head *": "allow",
+          "*>*": "deny"
+        },
         "task": {
           "*": "allow",
           "autopilot": "deny",
@@ -852,7 +910,15 @@
         "stitch_*": true
       },
       "permission": {
-        "bash": "deny",
+        "bash": {
+          "*": "deny",
+          "echo *": "allow",
+          "ls *": "allow",
+          "test *": "allow",
+          "[ *": "allow",
+          "head *": "allow",
+          "*>*": "deny"
+        },
         "task": {
           "*": "allow",
           "autopilot": "deny",

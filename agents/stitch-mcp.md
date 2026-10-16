@@ -5,7 +5,7 @@ tools:
   read: true
   write: true
   edit: false
-  bash: false
+  bash: true
   glob: true
   grep: true
   stitch_*: true

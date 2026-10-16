@@ -5,7 +5,7 @@ tools:
   read: true
   write: false
   edit: false
-  bash: false
+  bash: true
   glob: true
   grep: true
   jira_*: true

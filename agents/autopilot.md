@@ -8,7 +8,7 @@ tools:
   glob: true
   grep: true
   edit: false
-  bash: false
+  bash: true
 permission:
   bash:
     "security *": deny
