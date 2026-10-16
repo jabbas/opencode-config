@@ -27,3 +27,6 @@ opencode.json.bak-*
 # direnv
 .envrc
 .direnv/
+
+# OpenCode v2 background-service credentials (server password) — NEVER commit
+service.json
