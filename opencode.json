@@ -447,7 +447,7 @@
           "pdf": "allow",
           "xlsx": "allow",
           "claude-api": "allow",
-          "customize-opencode": "allow"
+          "opencode": "allow"
         }
       }
     },
@@ -714,7 +714,9 @@
           "workers-best-practices": "allow",
           "durable-objects": "allow",
           "agents-sdk": "allow",
-          "sandbox-sdk": "allow",
+          "sandbox-stable": "allow",
+          "sandbox-next": "allow",
+          "sandbox-migrate-to-next": "allow",
           "cloudflare-email-service": "allow",
           "turnstile-spin": "allow",
           "web-perf": "allow"
@@ -770,9 +772,15 @@
         "skill": {
           "*": "deny",
           "using-superpowers": "allow",
-          "stitch::*": "allow",
+          "code-to-design": "allow",
+          "extract-design-md": "allow",
+          "extract-static-html": "allow",
+          "generate-design": "allow",
+          "manage-design-system": "allow",
+          "upload-to-stitch": "allow",
+          "react-native": "allow",
           "remotion": "allow",
-          "react:components": "allow",
+          "react-components": "allow",
           "shadcn-ui": "allow",
           "design-md": "allow",
           "enhance-prompt": "allow",

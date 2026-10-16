@@ -123,8 +123,13 @@ Each agent's visible skills are restricted via `permission.skill` in
 `opencode.json` (`agent.<name>.permission.skill`), pattern
 `{"*": "deny", "<skill>": "allow", ...}`. **Only `deny` saves tokens** — a denied
 skill is hidden from `<available_skills>` AND blocked from invocation; `allow`/`ask`
-both keep it on the list at full cost (verified: `skill/index.ts:314`,
-`permission/index.ts:86`). **Missing skill → delegate** to the owning specialist
+both keep it on the list at full cost (verified on v2.0.29:
+`packages/core/src/skill.ts:34` `Skill.available` filters `effect !== "deny"`;
+`skill/instructions.ts:74` renders that list; `tool/plugin/skill.ts:51` asserts the
+permission on invoke; `permission.ts:87` — last matching rule wins).
+**Whitelist keys match the skill ID = its directory name, NOT the frontmatter
+`name:`** (e.g. `generate-design`, not `stitch::generate-design`). A key that matches
+no ID silently grants nothing. **Missing skill → delegate** to the owning specialist
 (`@frontend`, `@stitch`, `@writer`, `@cloudflare`, `@jenkins`, `@skill-smith`) when
 you are the coordinator; as a subagent, report the need back instead (see
 "Delegation Rules" above — one level only).
@@ -141,15 +146,15 @@ Full rationale, ownership map, and per-agent skill lists:
 
 ## Skill Resolution & Invocation
 
-Skills are loaded via OpenCode's **native `skill` tool** (`tool/skill.ts`), not the
-deprecated `use_skill`/`find_skills` custom tools (removed upstream; see
-`superpowers/RELEASE-NOTES.md`). Discovery scans `**/SKILL.md` under the configured
-skill dirs and keys skills by `name`.
+Skills are loaded via OpenCode's **native `skill` tool** (v2:
+`packages/core/src/tool/plugin/skill.ts`), not the deprecated
+`use_skill`/`find_skills` custom tools (removed upstream; see
+`superpowers/RELEASE-NOTES.md`). Discovery (`config/plugin/skill.ts`) scans
+`{*.md,**/SKILL.md}` under `skill/` and `skills/` of each config directory, plus
+paths listed in config `skills`. The skill **ID is the parent directory name** of
+`SKILL.md` (or the filename of a top-level `*.md`); the frontmatter `name:` is only a
+display name. OpenCode also ships built-in skills (`opencode`, `report`).
 
-Name-collision precedence (first match wins):
-1. **Project skills** — current working directory
-2. **Personal skills** — user's config dir
-3. **Superpowers skills** — from the plugin
-
-Use `superpowers:skill-name` prefix to force the superpowers version and bypass shadowing.
+ID collisions: sources are loaded in order into a map, so the **later source wins**.
+There is no `superpowers:` prefix in v2 — avoid duplicate directory names instead.
 Per-agent visibility is then filtered by `permission.skill` (see "Per-Agent Skill Whitelists").
