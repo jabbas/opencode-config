@@ -120,7 +120,9 @@ interface KiloState {
     `{ type:"oauth", methodID:"oauth", access: token, refresh: token, expires: now+1y,
     metadata: { accountID?, orgName? } }`.
   - `label: c => "Kilo · " + (c.metadata?.orgName ?? c.metadata?.accountID ?? "Personal")`
-    (credential z importu v1 ma tylko `accountID`). Ten sam `label` dla metody `organization`.
+    Ten sam `label` dla metody `organization`. `label` dotyczy tylko credentiali utworzonych przez
+    nasze metody — credential z importu v1 zachowuje etykietę migracji core (`"OAuth"`), działa
+    natomiast w pełni (org z `metadata.accountID`, token, osadzony URL).
 - **`organization` — „Kilo · Add organization”**: rejestrowana tylko gdy `state.auth.source === "credential"`
   i `orgOptions.length >= 2`. Formularz: jedno pole `{ type:"string", key:"organization",
   title:"Organization", required:true, options: orgOptions, default: state.auth.orgId ?? "personal" }`.
@@ -142,10 +144,15 @@ interface KiloState {
   = `state.auth.orgId` (jeśli jest). BaseURL nie jest tu ustawiany — `provider.transform` już
   liczy go ze `state.auth.apiBase` (osadzony URL / `KILO_API_URL`) i jest ponownie stosowany po
   każdym `refresh()` przez `provider.reload()`.
-- `session.hook("http.request", …, { providerID:"kilo" })`: rejestrowany zawsze; działa tylko gdy
-  aktywny token ma osadzony prefiks URL — ustawia `Authorization: Bearer <token bez prefiksu>`.
+- `session.hook("http.request", …, { providerID:"kilo" })`: rejestrowany zawsze; gdy `state.auth`
+  istnieje, ustawia `Authorization: Bearer <state.auth.token>` (token bez prefiksu URL). Powód:
+  core wstrzykuje `apiKey` z aktywnego połączenia, a przy `KILO_API_KEY` + zapisanym credentialu
+  core wybiera credential, podczas gdy org/modele idą z env — hook ujednolica źródło (recenzja końcowa).
+- Ceny ujemne z Kilo (`"-1"`, ceny zmienne) → `0` w `toV2Model` (v2 liczy koszty sesji).
+- Nagłówek `User-Agent` jest w v2 nadpisywany przez core per żądanie; atrybucję niesie
+  `X-KILOCODE-EDITORNAME`.
 - `toV2Model(raw)`: `id = modelID = raw.id`, `providerID:"kilo"`, `name`,
-  `capabilities: { tools:true, input/output z architecture.*_modalities }`,
+  `capabilities: { tools:true, input/output z architecture.*_modalities, "file" → "pdf" (v2 dopasowuje "pdf"; v1 też mapował file → pdf) }`,
   `limit: { context: context_length, output: max_completion_tokens ?? top_provider.max_completion_tokens }`,
   `cost: [{ input, output, cache:{read,write} }]` (×1e6, jak v1), `status:"active"`, `enabled:true`,
   `variants: []`, `time.released: 0`. Bazą `Model.Info.default`-podobny literał (bez importu runtime).

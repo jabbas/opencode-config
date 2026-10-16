@@ -128,7 +128,7 @@ Follows `~/Projects/mnemoteca/docs/migrate-from-mnemosyne.md` Path 2. **Human ru
 - [ ] **Step 2:** Backup: `tar czf ~/mnemosyne-backup-2026-10-04.tgz -C ~/.local/share mnemosyne`; `tar tzf ~/mnemosyne-backup-2026-10-04.tgz | grep mnemosyne.db` non-empty.
 - [ ] **Step 3:** Install: `brew install gandazgul/tap/mnemoteca` (not `install.sh`); `mnemoteca --version`; `mnemoteca setup` if `stats` reports missing models/ONNX runtime.
 - [ ] **Step 4:** `mkdir -p ~/.mnemoteca-migration-exports/manual-mnemosyne-export` (must be empty); `~/bin/mnemosyne export --all --yes --output ~/.mnemoteca-migration-exports/manual-mnemosyne-export`.
-- [ ] **Step 5:** Count export: number of `*.jsonl` = collections; sum of (lines − 1) = documents. Must equal Step 1.
+- [ ] **Step 5:** Count export: number of `*.jsonl` = collections; sum of (lines − 1) = documents. Must equal Step 1. Include dot-named collections (e.g. `.talos.jsonl` — zsh `*.jsonl` globs skip them) and count a last line without trailing newline: `find . -maxdepth 1 -name '*.jsonl' | wc -l` and `find . -maxdepth 1 -name '*.jsonl' -exec sh -c 'echo $(( $(grep -c "" "$1") - 1 ))' _ {} \; | paste -sd+ - | bc`.
 - [ ] **Step 6:** `mnemoteca stats --format json` → `collection_count: 0`, `document_count: 0`, `database_path` ≠ old `Database Path:` (after resolving symlinks). Else STOP.
 - [ ] **Step 7:** `mnemoteca import --dir ~/.mnemoteca-migration-exports/manual-mnemosyne-export` — exactly once.
 - [ ] **Step 8:** `mnemoteca stats --format json` counts equal Step 5; `mnemoteca search --fts-only --no-rerank --limit 5 "<known global memory>"` and one project memory return the expected text. Mismatch → STOP: destination is partial, do not re-import, report to human.
