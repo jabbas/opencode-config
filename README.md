@@ -21,8 +21,8 @@ same everywhere; everything machine-specific lives in two gitignored places:
 At runtime OpenCode auto-loads and deep-merges, in ascending precedence:
 
 ```
-config.json  →  opencode.json  →  opencode.jsonc  →  project config
-                (shared base)     (per-machine)
+opencode.json  →  opencode.jsonc  →  project config
+(shared base)     (per-machine)
 ```
 
 The local layer wins per-key, so it can set models/providers without touching the
@@ -31,11 +31,12 @@ the filenames OpenCode discovers natively in the config dir. It also supports `/
 comments.
 
 > **Do not use `OPENCODE_CONFIG`.** It only works where the variable is exported
-> (e.g. from `~/.zshrc`; OpenCode Desktop, editor/ACP launches and launchd don't
-> see it — there `model` silently resolves to `null`), and it is merged *after*
-> `opencode.jsonc`, so it silently overrides the local layer. An earlier
-> `opencode.local.json` layer relied on it and has been retired. (Older docs claimed
-> it disables project config discovery — verified false on 1.18.33.)
+> (e.g. from `~/.zshrc`; OpenCode Desktop, editor/ACP launches and the background
+> service started by launchd don't see it — there `model` silently resolves to
+> `null`), and it is merged *after* `opencode.jsonc`, so it silently overrides the
+> local layer. An earlier `opencode.local.json` layer relied on it and has been
+> retired. (v2 does not read `config.json` at all; only `opencode.json` /
+> `opencode.jsonc`.)
 
 `{file:secrets/...}` references resolve **relative to the config directory**, so the
 same `opencode.json` automatically reads each machine's own `secrets/`.
@@ -105,9 +106,9 @@ ls -l opencode.jsonc                               # confirm it is still a symli
 ```
 
 Restart OpenCode after switching. Note: when OpenCode itself writes global config
-(e.g. `opencode plugin <x>`), it writes to the first existing of
-`opencode.jsonc` → `opencode.json` → `config.json` — i.e. through the symlink into
-the active variant, not into the shared `opencode.json`. Add shared plugins to
+(e.g. settings changed from the TUI), v2 writes to `opencode.jsonc` if it exists,
+else `opencode.json` — i.e. through the symlink into the active variant, not into
+the shared `opencode.json`. Add shared plugins to
 `opencode.json` by hand.
 
 ### 3. Fill in secrets
@@ -157,9 +158,9 @@ automatically.
 
 ### Side-by-side configs
 
-To switch to a completely separate config directory, use `XDG_CONFIG_HOME`. It
-genuinely replaces `Path.config` and keeps project config discovery working
-(verified empirically):
+To switch to a completely separate config directory, use `XDG_CONFIG_HOME` (or, in
+v2, `OPENCODE_CONFIG_DIR`). Both replace the config dir and keep project config
+discovery working:
 
 ```bash
 alias opencode-priv='XDG_CONFIG_HOME="$HOME/.config-priv" opencode'
@@ -168,21 +169,33 @@ alias opencode-priv='XDG_CONFIG_HOME="$HOME/.config-priv" opencode'
 
 This swaps only the config dir; data/state/cache have their own `XDG_*_HOME`.
 
-Two variables that look like they'd do this, but **don't**:
+Config-related environment variables (verified in OpenCode v2.0.29 source:
+`cli/src/server-process.ts`, `core/src/config.ts`, `core/src/config/discovery.ts`):
 
-| Variable | Actual behaviour |
+| Variable | Behaviour in v2 |
 |---|---|
-| `OPENCODE_CONFIG` | Loads one extra file, merged *after* `opencode.jsonc` (silently overrides it). Only applies where the variable is exported — GUI/ACP/launchd launches don't see it. Project config discovery still works (verified on 1.18.33). Don't use it; use `opencode.jsonc`. |
-| `OPENCODE_CONFIG_DIR` | Does **not** replace the config dir. `~/.config/opencode` still loads in full; the given dir is *appended* as the highest-priority layer, overriding even project config. OpenCode also writes `.gitignore`/`package.json`/`node_modules/` into it (treats it as a plugin dir). |
+| `OPENCODE_CONFIG_DIR` | **Replaces** the global config dir (`Global.config`), like `XDG_CONFIG_HOME/opencode`. (In v1 it was *appended* as an extra layer — no longer true.) |
+| `OPENCODE_CONFIG` | Loads one extra file, ranked above the global dir (so above `opencode.jsonc`) and below project config. Only applies where the variable is exported. Don't use it; use `opencode.jsonc`. |
+| `OPENCODE_CONFIG_CONTENT` | Inline JSON config, ranked above project config. |
+| `OPENCODE_DISABLE_PROJECT_CONFIG` / `OPENCODE_CONFIG_PROJECT_DISABLE` | Skip project config discovery. |
+
+The background service (`opencode serve --service`) reads its environment when it
+starts, so after changing any of these, restart the service.
 
 Full merge order (ascending precedence):
 
 ```
-~/.config/opencode/{config.json → opencode.json → opencode.jsonc}
+remote .well-known config
+  → ~/.config/opencode/{opencode.json → opencode.jsonc}
   → $OPENCODE_CONFIG
-  → project config (opencode.json/jsonc walking up the tree)
-  → .opencode/ dirs + $OPENCODE_CONFIG_DIR
+  → project files (opencode.json/jsonc, walking up from the cwd; nearest wins)
+  → project .opencode/ dirs
+  → $OPENCODE_CONFIG_CONTENT
+  → managed config (/Library/Application Support/opencode, MDM ai.opencode.managed)
 ```
+
+v2 also discovers skills/agents from `~/.claude`, `~/.agents` and their project
+equivalents (Claude Code / agents-standard compatibility).
 
 ---
 

@@ -32,9 +32,10 @@ This config is shared verbatim between the private and work machines. The shared
 `provider` block. Those live in a per-machine `opencode.jsonc` (gitignored), which
 OpenCode **auto-loads and deep-merges on top of `opencode.json`**. No env var needed.
 
-- **Load order** (ascending precedence): `config.json` → `opencode.json` →
-  `opencode.jsonc` → project config (`.opencode/opencode.jsonc` etc.). All are
-  deep-merged; later layers win per-key.
+- **Load order** (ascending precedence, v2): `opencode.json` → `opencode.jsonc`
+  → project config (`opencode.json[c]` up the tree, then `.opencode/`). All are
+  deep-merged; later layers win per-key. v2 no longer reads `config.json`. Full
+  order incl. env vars and managed config: README "Side-by-side configs".
 - **Defaults:** `opencode.jsonc` sets `model` = sonnet and `small_model` = haiku.
 - **Per-agent override:** thinking-role agents can set their own model via
   `agent.<name>.model`. Everyone else inherits the global default. To change a
@@ -44,8 +45,9 @@ OpenCode **auto-loads and deep-merges on top of `opencode.json`**. No env var ne
 - **Providers:** machine-specific providers (e.g. a work-only gateway such as
   `kilocode`) go in `opencode.jsonc`'s `provider` block, not in `opencode.json`.
 - **Never use `OPENCODE_CONFIG`.** It only applies where the env var is exported
-  (GUI/ACP/launchd launches get `model: null`) and is merged *after*
-  `opencode.jsonc`, silently overriding it. The retired `opencode.local.json` layer
+  (GUI/ACP launches and the launchd background service get `model: null`) and is
+  merged *after* `opencode.jsonc`, silently overriding it. (`OPENCODE_CONFIG_DIR`
+  in v2 *replaces* the config dir — not an extra layer.) The retired `opencode.local.json` layer
   depended on it. `opencode.jsonc` replaces it with no such drawback.
 - **Variants:** a machine may keep several gitignored `opencode.*.json` variants
   and make `opencode.jsonc` a symlink to the active one
