@@ -19,6 +19,12 @@ changes.** It has the code style, naming conventions, build/test commands, full
 repo layout, and error-handling patterns. Non-editing tasks (queries, web ops,
 home automation) do not need it.
 
+**After updating skill submodules or editing any `permission.skill` whitelist, run
+`bash scripts/check-skill-whitelists.sh` and fix every `[FAIL]`.** A whitelist key
+that matches no skill ID silently grants nothing (v2 matches the directory name,
+not `name:`). Then report new `[INFO]` orphans to the user so they can decide which
+agent, if any, gets them.
+
 ## Model Layer & Machine Portability
 
 This config is shared verbatim between the private and work machines. The shared
