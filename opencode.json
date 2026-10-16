@@ -10,7 +10,7 @@
   },
   "plugin": [
     "@andrzejchm/opencode-anthropic-auth@2.3.0",
-    "@dragenetlabs/opencode-kilo-gateway"
+    "github:jabbas/opencode-kilo-gateway#3852ff4aa7505f3e4ee8d8119f9ff28c78db8509"
   ],
   "permission": {
     "edit": "ask",
