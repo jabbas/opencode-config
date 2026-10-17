@@ -3,8 +3,6 @@ name: cloudflare
 description: Cloudflare platform specialist - Workers, Pages, KV/D1/R2, Durable Objects, wrangler, Agents SDK, email, Turnstile
 tools:
   read: true
-  write: true
-  edit: true
   bash: true
   glob: true
   grep: true

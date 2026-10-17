@@ -3,8 +3,6 @@ name: devops
 description: CI/CD, GitOps, Kubernetes - GitHub Actions, Flux, Helm charts, manifests, live cluster ops, git operations
 tools:
   read: true
-  write: true
-  edit: true
   bash: true
   glob: true
   grep: true

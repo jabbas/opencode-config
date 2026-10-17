@@ -3,8 +3,6 @@ name: frontend
 description: Frontend and visual design - UI components, web artifacts, generative art, brand styling, theming, browser testing
 tools:
   read: true
-  write: true
-  edit: true
   bash: true
   glob: true
   grep: true

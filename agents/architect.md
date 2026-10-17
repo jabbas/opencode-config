@@ -3,8 +3,6 @@ name: architect
 description: Software architecture and system design - ADRs, system diagrams, technical design docs, API contracts, migration plans; delegates writing and code execution
 tools:
   read: true
-  write: true
-  edit: true
   bash: true
   glob: true
   grep: true

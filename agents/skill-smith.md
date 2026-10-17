@@ -3,8 +3,6 @@ name: skill-smith
 description: Meta-engineering - create and improve OpenCode/Claude skills, build MCP servers
 tools:
   read: true
-  write: true
-  edit: true
   bash: true
   glob: true
   grep: true

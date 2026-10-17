@@ -3,8 +3,6 @@ name: general
 description: General-purpose software and DevOps engineer; fallback when no specialist agent fits
 tools:
   read: true
-  write: true
-  edit: true
   bash: true
   glob: true
   grep: true

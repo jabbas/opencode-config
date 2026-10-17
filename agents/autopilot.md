@@ -4,10 +4,8 @@ description: User-only autonomous orchestrator - give it any task and it plans, 
 mode: primary
 tools:
   read: true
-  write: true
   glob: true
   grep: true
-  edit: false
   bash: true
 permission:
   bash:
