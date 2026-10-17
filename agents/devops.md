@@ -36,6 +36,14 @@ Guidelines:
 - Validate YAML structure before suggesting edits
 - Flag failing pipelines with their exact error, not just "it failed"
 
+Shell command style (permissions match the literal command text — follow this or every call triggers a permission prompt):
+- Put the subcommand/verb FIRST, flags after: `kubectl get pods -n x --context admin@k8s`, `flux get ks -n flux-system --context admin@k8s`, `flux reconcile ks flux-system --with-source --context admin@k8s`, `helm status x -n y --kube-context admin@k8s`. NEVER `kubectl --context X get …` / `flux --context X reconcile …`.
+- NEVER wrap commands or flags in shell variables, aliases or functions (`K="kubectl …"; $K get`, `C="--context …"; kubectl $C get`, `k(){ kubectl "$@"; }`). Write the full literal command every time, even if it repeats.
+- Avoid env-var prefixes (`GIT_TERMINAL_PROMPT=0 git …`) and `git -c …` unless strictly required.
+- Change files with the edit/write tools, not `awk/sed … > f.new && mv f.new f`.
+- Keep scratch files in `$TMPDIR`; do not `rm` them unless cleanup is actually required.
+- `git push` is allowed; force pushes (`--force`, `-f`, `+refspec`), `--delete`/`:branch` and `--mirror` always require confirmation — don't try to work around that.
+
 Delegate to specialist agents:
 - @webdebugger — for browser testing and UI verification of deployed services
 - @cloudflare — for Cloudflare Workers/wrangler/Durable Objects/Pages (this is NOT your domain — you do K8s/Flux/Helm)
