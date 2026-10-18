@@ -73,23 +73,23 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 |-------|---------|
 | `general` | General-purpose fallback; software + DevOps (prompt: `agents/general.md`) |
 | `coder` | Polyglot code — Go, Python, TypeScript, Shell |
-| `architect` | Software/system architecture, ADRs, design, plans (bash: deny; delegates) |
-| `autopilot` | User-only autonomous orchestrator; subagents execute. `bash: deny`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it from the `subagent` tool) + `task: {autopilot: deny}` on all agents |
+| `architect` | Software/system architecture, ADRs, design, plans (bash: restricted; delegates) |
+| `autopilot` | User-only autonomous orchestrator; subagents execute. `bash: restricted`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it from the `subagent` tool) + `task: {autopilot: deny}` on all agents |
 | `debugger` | Full-stack debugging, diagnosis only |
 | `devops` | CI/CD, GitHub, Flux, Helm, Kustomize, git ops |
 | `jenkins` | Jenkins controller ops via the `jk` CLI — jobs, runs, logs, config.xml, artifacts, credentials, nodes, plugins. Owns the `jk` skill; all other agents delegate Jenkins actions here |
 | `ha` | Home Assistant — query entities, control devices, ESPHome via `esp.iot` SSH |
 | `webdebugger` | Browser testing, UI verification via Playwright + Chrome DevTools |
-| `webscraper` | Extract web content via Firecrawl (bash: deny) |
-| `webresearcher` | Search & synthesize web info via Firecrawl (bash: deny) |
-| `webmonitor` | Web page change tracking via Firecrawl (bash: deny) |
+| `webscraper` | Extract web content via Firecrawl (bash: restricted) |
+| `webresearcher` | Search & synthesize web info via Firecrawl (bash: restricted) |
+| `webmonitor` | Web page change tracking via Firecrawl (bash: restricted) |
 | `cloudflare` | Cloudflare Workers/wrangler/Durable Objects/Pages |
 | `frontend` | UI build, components, visual/graphic work, generative art |
 | `stitch` | Google Stitch design→code |
 | `writer` | Documentation, specs, internal comms; docx/pptx/pdf |
 | `skill-smith` | Create/edit skills, build MCP servers |
-| `jira` | Jira issue tracking via `jira_*` MCP (bash: deny) |
-| `stitch-mcp` | Google Stitch UI design via `stitch_*` MCP (bash: deny; separate from skill-driven `stitch`) |
+| `jira` | Jira issue tracking via `jira_*` MCP (bash: restricted) |
+| `stitch-mcp` | Google Stitch UI design via `stitch_*` MCP (bash: restricted; separate from skill-driven `stitch`) |
 
 - `plan` agent is defined in `opencode.json` only (read-only: no bash/edit/write tools).
 - `websearch` was removed — curl/wget is covered by any bash-enabled agent; readable web content via `@webscraper`.

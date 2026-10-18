@@ -420,7 +420,7 @@
   },
   "agent": {
     "plan": {
-      "prompt": "You are in PLAN MODE. Analyze the codebase thoroughly before making any changes. Do not write files; the only shell commands allowed are read-only echo, ls, test and head. Only provide detailed analysis and plan.",
+      "prompt": "You are in PLAN MODE. Analyze the codebase thoroughly before making any changes. Do not write files; the only shell commands allowed are echo, ls, test, head, cat, printf and mkdir (no output redirection). Only provide detailed analysis and plan.",
       "steps": 15,
       "tools": {
         "edit": false,
@@ -439,6 +439,9 @@
           "test *": "allow",
           "[ *": "allow",
           "head *": "allow",
+          "cat *": "allow",
+          "printf *": "allow",
+          "mkdir *": "allow",
           "*>*": "deny"
         },
         "skill": {
@@ -460,6 +463,9 @@
           "test *": "allow",
           "[ *": "allow",
           "head *": "allow",
+          "cat *": "allow",
+          "printf *": "allow",
+          "mkdir *": "allow",
           "*>*": "deny"
         },
         "edit": {
@@ -550,6 +556,9 @@
           "test *": "allow",
           "[ *": "allow",
           "head *": "allow",
+          "cat *": "allow",
+          "printf *": "allow",
+          "mkdir *": "allow",
           "*>*": "deny"
         },
         "task": {
@@ -759,6 +768,9 @@
           "test *": "allow",
           "[ *": "allow",
           "head *": "allow",
+          "cat *": "allow",
+          "printf *": "allow",
+          "mkdir *": "allow",
           "*>*": "deny"
         },
         "skill": {
@@ -789,6 +801,9 @@
           "test *": "allow",
           "[ *": "allow",
           "head *": "allow",
+          "cat *": "allow",
+          "printf *": "allow",
+          "mkdir *": "allow",
           "*>*": "deny"
         },
         "skill": {
@@ -821,6 +836,9 @@
           "test *": "allow",
           "[ *": "allow",
           "head *": "allow",
+          "cat *": "allow",
+          "printf *": "allow",
+          "mkdir *": "allow",
           "*>*": "deny"
         },
         "skill": {
@@ -971,6 +989,9 @@
           "test *": "allow",
           "[ *": "allow",
           "head *": "allow",
+          "cat *": "allow",
+          "printf *": "allow",
+          "mkdir *": "allow",
           "*>*": "deny"
         },
         "task": {
@@ -997,6 +1018,9 @@
           "test *": "allow",
           "[ *": "allow",
           "head *": "allow",
+          "cat *": "allow",
+          "printf *": "allow",
+          "mkdir *": "allow",
           "*>*": "deny"
         },
         "task": {

@@ -34,7 +34,7 @@ Guidelines:
 - When asked to design something, start by asking clarifying questions about constraints, scale, and existing systems
 
 <CRITICAL-TOOL-CONSTRAINT>
-Your shell is restricted to read-only `echo`, `ls`, `test`/`[`, and `head` (no output redirection). Every other command — scripts, git, `cat`, heredocs — is denied; do not attempt them.
+Your shell is restricted to `echo`, `ls`, `test`/`[`, `head`, `cat`, `printf`, and `mkdir` (no output redirection). Every other command — scripts, git, heredocs, everything else — is denied; do not attempt them.
 
 When skills you load instruct you to:
 - "Commit the design document to git" → Use the Write tool to save the file, then tell your human partner to commit it (or delegate to @writer / @coder)
