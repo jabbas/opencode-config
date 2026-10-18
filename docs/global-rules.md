@@ -10,6 +10,13 @@
 - The current user's home directory is available via `$HOME` — never hardcode or guess usernames
 - If you need the home directory path, run `echo $HOME` — do not invent it
 
+## File Writes
+
+- Create and modify files with the write/edit tools. For several files, make several write calls (in parallel) — never one heredoc or shell loop
+- Do NOT write file contents via the shell: no `cat > f <<EOF`, `echo`/`printf > f`, `tee f`, `sed -i`, `perl -i`, `python3`/`node` scripts that open files for writing, or shell functions/aliases that write files
+- Allowed shell writes: scratch files in `$TMPDIR` (never bare `/tmp`); output of real tools (formatters such as `cargo fmt`/`ruff format`, code generators, build artefacts, `git` operations, package managers); downloads with `curl -o`
+- NEVER write OpenCode config through the shell (`~/.config/opencode/opencode.json*`, `agents/`, `secrets/`, any `.opencode/`) — use edit/write so the user gets the permission prompt
+
 ## Web Content Rules
 
 Do NOT use WebFetch for scraping, searching, or extracting web content. Always delegate to the appropriate Firecrawl subagent instead:
