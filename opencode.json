@@ -161,6 +161,7 @@
       "gh pr status *": "allow",
       "gh run view *": "allow",
       "gh run list *": "allow",
+      "gh run watch *": "allow",
       "gh workflow view *": "allow",
       "gh workflow list *": "allow",
       "gh issue view *": "allow",
