@@ -2,7 +2,6 @@
 name: webdebugger
 description: Web debugging and browser testing - UI verification, network inspection, screenshots, JS-rendered page interaction
 tools:
-  read: true
   write: false
   edit: false
   bash: false

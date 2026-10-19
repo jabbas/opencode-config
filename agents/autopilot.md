@@ -3,7 +3,6 @@ name: autopilot
 description: User-only autonomous orchestrator - give it any task and it plans, delegates all execution to subagents, self-verifies, and reports, without interaction
 mode: primary
 tools:
-  read: true
   glob: true
   grep: true
   bash: true

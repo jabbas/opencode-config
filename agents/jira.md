@@ -2,7 +2,6 @@
 name: jira
 description: Jira issue tracking - search/create/update issues, transitions, comments, worklogs, sprints, boards via the Jira MCP
 tools:
-  read: true
   write: false
   edit: false
   bash: true

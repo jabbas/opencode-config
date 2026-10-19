@@ -2,7 +2,6 @@
 name: coder
 description: Polyglot coding - Go, Python, TypeScript and others; TDD, refactoring, tests
 tools:
-  read: true
   bash: true
   glob: true
   grep: true

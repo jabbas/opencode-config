@@ -2,7 +2,6 @@
 name: writer
 description: Documentation and communications - technical docs, specs, proposals, internal comms; generates Word/PowerPoint/PDF deliverables
 tools:
-  read: true
   bash: true
   glob: true
   grep: true

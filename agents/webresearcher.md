@@ -2,7 +2,6 @@
 name: webresearcher
 description: Web research and discovery - search, find information, synthesize findings via Firecrawl
 tools:
-  read: true
   write: false
   edit: false
   bash: true

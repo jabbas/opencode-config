@@ -17,6 +17,18 @@
 - Allowed shell writes: scratch files in `$TMPDIR` (never bare `/tmp`); output of real tools (formatters such as `cargo fmt`/`ruff format`, code generators, build artefacts, `git` operations, package managers); downloads with `curl -o`
 - NEVER write OpenCode config through the shell (`~/.config/opencode/opencode.json*`, `agents/`, `secrets/`, any `.opencode/`) — use edit/write so the user gets the permission prompt
 
+## Shell Command Style
+
+Permissions match the literal command text — follow this or every call triggers a permission prompt:
+
+- Put the verb/subcommand FIRST, flags after: `kubectl get pods -n x --context admin@k8s`, `flux get ks -n flux-system --context admin@k8s`, `flux reconcile ks x --with-source --context admin@k8s`, `helm status x -n y --kube-context admin@k8s`. NEVER `kubectl --context X get …` / `flux --context X reconcile …`.
+- Use the shell tool's working directory instead of `git -C dir …` (just `git log`) and instead of `cd dir && …`.
+- NEVER wrap commands or flags in shell variables, aliases or functions (`K="kubectl …"; $K get`, `C="--context …"; kubectl $C get`, `k(){ kubectl "$@"; }`). Write the full literal command every time, even if it repeats.
+- No `timeout`/`time`/`env X=…`/`VAR=x cmd` prefixes (e.g. `GIT_TERMINAL_PROMPT=0 git …`), no `git -c …`, and no `bash -c '…'` unless strictly required.
+- One simple command per call where practical; avoid long `&&`/`;` chains and `awk/sed … > f.new && mv f.new f` — change files with the edit/write tools.
+- Scratch files go under `$TMPDIR`, written literally (not through `$T`-style aliases); do not `rm` them unless cleanup is actually required.
+- `git push` is allowed; force/delete/mirror always ask — don't try to work around that.
+
 ## Web Content Rules
 
 Do NOT use WebFetch for scraping, searching, or extracting web content. Always delegate to the appropriate Firecrawl subagent instead:

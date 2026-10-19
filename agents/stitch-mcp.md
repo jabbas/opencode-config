@@ -2,7 +2,6 @@
 name: stitch-mcp
 description: Google Stitch UI design via MCP - create/edit screens, design systems, and variants from text prompts via the Stitch MCP
 tools:
-  read: true
   write: true
   edit: false
   bash: true

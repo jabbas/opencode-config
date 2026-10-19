@@ -2,7 +2,6 @@
 name: webscraper
 description: Web content extraction - single pages, multi-page crawls, interactive JS pages via Firecrawl
 tools:
-  read: true
   write: false
   edit: false
   bash: true

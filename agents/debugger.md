@@ -2,7 +2,6 @@
 name: debugger
 description: Full-stack debugging - cluster events, pod logs, application errors; diagnosis only, no changes
 tools:
-  read: true
   write: false
   edit: false
   bash: true

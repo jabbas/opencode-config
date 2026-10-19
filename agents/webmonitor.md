@@ -2,7 +2,6 @@
 name: webmonitor
 description: Web change tracking - set up, manage, and check monitors for page changes via Firecrawl
 tools:
-  read: true
   write: false
   edit: false
   bash: true

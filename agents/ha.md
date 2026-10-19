@@ -2,7 +2,6 @@
 name: ha
 description: Home Assistant smart home - query entities, control devices, automations, energy dashboards, ESPHome devices (incl. SSH to esp.iot for ESPHome config edits)
 tools:
-  read: true
   write: false
   edit: false
   bash: true
