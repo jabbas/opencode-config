@@ -29,7 +29,7 @@ Permissions match the literal command text — follow this or every call trigger
 - Run built binaries by their literal path (`target/debug/x`), not via a variable (`$B`); stop a background process you started in the same command with `kill $!` or `kill %1` (other `kill`/`pkill` asks).
 - One simple command per call where practical; avoid long `&&`/`;` chains and `awk/sed … > f.new && mv f.new f` — change files with the edit/write tools.
 - Scratch files go under `$TMPDIR`, written literally (not through `$T`-style aliases); do not `rm` them unless cleanup is actually required.
-- To clean up, remove ONE scratch directory with one `rm` (`rm -rf $TMPDIR/kind`), not a list of files — an `rm` with several paths always asks; a single literal tmp path does not.
+- `rm` of relative project paths runs without asking (several at once is fine); absolute, `~`, `$VAR`, `..` and `.git` paths ask. Exception: ONE literal path under `$TMPDIR`/`/tmp` runs without asking (`rm -rf $TMPDIR/kind`); several tmp paths in one `rm` ask, so remove one scratch directory instead of a list of files.
 - `git push` is allowed; force/delete/mirror always ask — don't try to work around that.
 
 ## Web Content Rules
