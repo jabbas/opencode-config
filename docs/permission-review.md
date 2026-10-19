@@ -29,6 +29,11 @@ Raw command classification: `scripts/audit-bash-permissions.py`.
 
 - Open the DB read-only: `file:~/.local/share/opencode/opencode.db?mode=ro`
   (use the expanded absolute path from `$HOME`).
+- Read the DB **only through `python3`** (`sqlite3` module, `uri=True`). Never use
+  the `sqlite3` CLI: it asks for permission on purpose — even with `mode=ro` its
+  dot-commands (`.shell`, `.system`, `.output`, `.load`) and `ATTACH`/`VACUUM INTO`
+  can run commands or write files. This includes `.schema`: use
+  `SELECT sql FROM sqlite_master` from Python.
 - **One simple command per tool call** — a single `python3 script.py`. No `&&` /
   `;` chains: if a prompt appears, "Always" would save an approval for every
   sub-command of the chain.
