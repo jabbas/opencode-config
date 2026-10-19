@@ -129,6 +129,7 @@ scripts/audit-bash-permissions.py                        # query default DB (~10
 scripts/audit-bash-permissions.py --top 120 --json /tmp/report.json
 scripts/audit-bash-permissions.py --from-json export.json  # reuse an export
 ```
+Periodic review procedure (ask rate, remaining asks, saved "Always" approvals): `docs/permission-review.md`.
 
 ## Code Style Guidelines
 

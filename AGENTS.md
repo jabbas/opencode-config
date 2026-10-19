@@ -125,6 +125,15 @@ These apply to every agent (this file is injected globally via `Instruction.syst
   frontmatter `name:` (`agents/general.md` → `general`).
 - **Jenkins → `@jenkins`.** Any Jenkins controller action — builds/runs, logs, jobs, `config.xml`, artifacts, test reports, credentials, nodes, queues, plugins — goes to `@jenkins`. Do NOT run the `jk` CLI yourself; the `jk` skill is denied to every agent except `jenkins`.
 
+## Periodic Permission Review
+
+- The **coordinator** (never a subagent) checks project memory at session start for
+  `PERMISSION REVIEW LAST:`. If missing or older than 7 days, dispatch `@general`
+  **in the background** per `docs/permission-review.md` and tell the user in one line.
+- Also run it on request: "zrób przegląd uprawnień" / "permission review".
+- Report findings to the user; change `opencode.json` or delete saved approvals
+  **only with explicit user approval**. Skip the auto-trigger in sessions about permissions.
+
 ## Per-Agent Skill Whitelists (token optimization)
 
 Each agent's visible skills are restricted via `permission.skill` in
