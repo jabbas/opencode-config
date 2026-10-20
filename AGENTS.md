@@ -75,7 +75,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 | `coder` | Polyglot code — Go, Python, TypeScript, Shell |
 | `architect` | Software/system architecture, ADRs, design, plans (bash: restricted; delegates) |
 | `autopilot` | User-only autonomous orchestrator; subagents execute. `bash: restricted`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it from the `subagent` tool) + `task: {autopilot: deny}` on all agents |
-| `debugger` | Full-stack debugging, diagnosis only |
+| `debugger` | Full-stack debugging; diagnoses, then applies clear fixes |
 | `devops` | CI/CD, GitHub, Flux, Helm, Kustomize, git ops |
 | `jenkins` | Jenkins controller ops via the `jk` CLI — jobs, runs, logs, config.xml, artifacts, credentials, nodes, plugins. Owns the `jk` skill; all other agents delegate Jenkins actions here |
 | `ha` | Home Assistant — query entities, control devices, ESPHome via `esp.iot` SSH |

@@ -31,6 +31,7 @@ Permissions match the literal command text — follow this or every call trigger
 - Scratch files go under `$TMPDIR`, written literally (not through `$T`-style aliases); do not `rm` them unless cleanup is actually required.
 - `rm` of relative project paths runs without asking (several at once is fine); absolute, `~`, `$VAR`, `..` and `.git` paths ask. Exception: ONE literal path under `$TMPDIR`/`/tmp` runs without asking (`rm -rf $TMPDIR/kind`); several tmp paths in one `rm` ask, so remove one scratch directory instead of a list of files.
 - `git push` is allowed; force/delete/mirror always ask — don't try to work around that.
+- `Permission denied: shell` means a deny rule fired, NOT that you lack shell access. Typical causes: the command starts with a variable (`$X …`), uses `perl -i`, or touches private keys / cloud tokens / keychain. Rewrite the command literally and retry; never conclude the shell is unavailable from one denial. Calling the subagent tool with your own agent name is always denied too.
 
 ## Web Content Rules
 
