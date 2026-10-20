@@ -140,7 +140,8 @@ decisions for shapes the wildcard rules cannot judge, with an explanatory
 - **deny** — shell function definitions (`f() {`, `function f {`); a variable as the command
   word after `NAME=v` assignments (`X=1 $sh w.sh`, `$K get`).
 - **ask** — scripts run from `$TMPDIR` / `/tmp` / `/var/folders/*/*/T` (`sh w.sh` after
-  `cd $TMPDIR`, `./x.sh`, `bash /tmp/x.sh`); `sh -c …` and `sh <(…)` are left to the config.
+  `cd $TMPDIR`, `./x.sh`, `bash /tmp/x.sh`) and sourced ones (`source $TMPDIR/env.sh`,
+  `. ./x.sh` after `cd $TMPDIR`); `sh -c …`, `sh <(…)` and `source <(…)` are left to the config.
 
 It hooks `tool.execute.before` (stashes the command by call id) and `permission.evaluate`
 (looks it up via `source.id`) and only moves a decision allow→ask/deny or ask→deny; it never

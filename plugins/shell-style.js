@@ -6,7 +6,8 @@
  *
  *  1. shell function definitions (rules only see the function name, not its body)
  *  2. a variable used as the command word after assignments (`X=1 $sh w.sh`)
- *  3. scripts executed from $TMPDIR / /tmp (contents invisible to the rules)
+ *  3. scripts executed or sourced (`sh x`, `./x`, `source x`, `. x`) from $TMPDIR / /tmp
+ *     (contents invisible to the rules)
  *
  * It only ever makes a decision STRICTER (allow→ask/deny, ask→deny); it never
  * loosens config rules and never touches an incoming `deny`. Any internal error is
@@ -494,6 +495,10 @@ function simple(cmd, state, ctx) {
       script = args[a];
       break;
     }
+    if (!script || script.text.startsWith('<(')) return;
+  } else if (name === 'source' || name === '.') {
+    // `source FILE` / `. FILE` run the file in the current shell.
+    script = args[0]?.text === '--' ? args[1] : args[0];
     if (!script || script.text.startsWith('<(')) return;
   } else if (name.includes('/') || /\.sh$/.test(name)) {
     script = head; // executed directly

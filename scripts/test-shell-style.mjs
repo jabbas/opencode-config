@@ -50,6 +50,37 @@ test('ask: scripts from tmp', () => {
   assert.match(analyze('sh $TMPDIR/w.sh', base).message, /script from \$TMPDIR/);
 });
 
+test('ask: source / dot of tmp scripts', () => {
+  assert.equal(eff('source $TMPDIR/env.sh'), 'ask');
+  assert.equal(eff('. "$TMPDIR/x.sh"'), 'ask');
+  assert.equal(eff('cd $TMPDIR && . ./x.sh'), 'ask');
+  assert.equal(eff('cd $TMPDIR && source x.sh'), 'ask');
+  assert.equal(eff('source /tmp/x.sh'), 'ask');
+  assert.equal(eff('FOO=1 . /private/tmp/x.sh'), 'ask');
+  assert.equal(eff('source -- $TMPDIR/x.sh'), 'ask');
+  assert.equal(eff('. ./x.sh', { cwd: TMP }), 'ask');
+  assert.match(analyze('source $TMPDIR/env.sh', base).message, /script from \$TMPDIR/);
+});
+
+test('null: source / dot of non-tmp files and plain dots', () => {
+  const cases = [
+    'source .venv/bin/activate',
+    '. ~/.zshrc',
+    'source ~/.bashrc',
+    '. ./x.sh',
+    'ls .',
+    'find . -name x',
+    'git add .',
+    'cd .',
+    'cd . && ls .',
+    'source',
+    '.',
+    'source <(kubectl completion bash)',
+    '. <(echo hi)',
+  ];
+  for (const c of cases) assert.equal(eff(c), null, c);
+});
+
 test('null: ordinary commands are untouched', () => {
   const cases = [
     `awk 'function f(x){return x} {print f($1)}' f`,
