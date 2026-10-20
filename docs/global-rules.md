@@ -23,7 +23,7 @@ Permissions match the literal command text — follow this or every call trigger
 
 - Put the verb/subcommand FIRST, flags after: `kubectl get pods -n x --context admin@k8s`, `flux get ks -n flux-system --context admin@k8s`, `flux reconcile ks x --with-source --context admin@k8s`, `helm status x -n y --kube-context admin@k8s`. NEVER `kubectl --context X get …` / `flux --context X reconcile …`.
 - Use the shell tool's working directory instead of `git -C dir …` (just `git log`) and instead of `cd dir && …`.
-- NEVER wrap commands or flags in shell variables, aliases or functions (`K="kubectl …"; $K get`, `C="--context …"; kubectl $C get`, `k(){ kubectl "$@"; }`). Write the full literal command every time, even if it repeats.
+- NEVER wrap commands or flags in shell variables, aliases or functions (`K="kubectl …"; $K get`, `C="--context …"; kubectl $C get`, `k(){ kubectl "$@"; }`). Write the full literal command every time, even if it repeats — a command that starts with a variable (`$K …`, `"$B" …`, `$(…) …`) is denied outright; rewrite it with the literal command.
 - No `timeout`/`time`/`env X=…`/`VAR=x cmd` prefixes (e.g. `GIT_TERMINAL_PROMPT=0 git …`), no `git -c …`, and no `bash -c '…'` unless strictly required.
 - Don't wrap commands in ad-hoc scripts (`$TMPDIR/x.sh`, `zsh snap.sh`, `bash check.sh`) — run the commands directly. Script contents are invisible to permissions, so running a script always asks; only real project/skill scripts are fine.
 - Run built binaries by their literal path (`target/debug/x`), not via a variable (`$B`); stop a background process you started in the same command with `kill $!` or `kill %1` (other `kill`/`pkill` asks).
