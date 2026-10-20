@@ -125,6 +125,10 @@ These apply to every agent (this file is injected globally via `Instruction.syst
   frontmatter `name:` (`agents/general.md` → `general`).
 - **Jenkins → `@jenkins`.** Any Jenkins controller action — builds/runs, logs, jobs, `config.xml`, artifacts, test reports, credentials, nodes, queues, plugins — goes to `@jenkins`. Do NOT run the `jk` CLI yourself; the `jk` skill is denied to every agent except `jenkins`.
 
+## Shell-Style Plugin
+
+`plugins/shell-style.js` tightens shell decisions (shell functions, variable command words, tmp scripts) with explanatory denial messages; it never loosens config rules. Editing `plugins/*` hot-reloads the server — develop on a copy. Details: `docs/dev-guide.md`.
+
 ## Periodic Permission Review
 
 - The **coordinator** (never a subagent) checks project memory at session start for

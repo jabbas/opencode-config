@@ -1,0 +1,192 @@
+// Unit tests for plugins/shell-style.js — run: node --test scripts/test-shell-style.mjs
+// (SHELL_STYLE_PLUGIN=/abs/path.js tests a dev copy instead of the live plugin.)
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { pathToFileURL } from 'node:url';
+
+const target = process.env.SHELL_STYLE_PLUGIN
+  ? pathToFileURL(process.env.SHELL_STYLE_PLUGIN).href
+  : new URL('../plugins/shell-style.js', import.meta.url).href;
+const { default: plugin, analyze } = await import(target);
+
+const PROJ = '/Users/x/Projects/p';
+const TMP = '/Users/x/faketmp';
+const base = { cwd: PROJ, tmpRoots: [TMP], tmpdir: TMP, home: '/Users/x' };
+const eff = (cmd, over = {}) => analyze(cmd, { ...base, ...over }).effect;
+
+test('deny: shell functions and variable command words', () => {
+  const cases = [
+    `ACCEPT='x'\nhead_code() { curl -s "https://r/v2/$1"; }\nfor r in a b; do echo "$(head_code $r v)"; done`,
+    'function f { ls; }; f',
+    'function f() { ls; }',
+    'k(){ kubectl "$@"; }; k get pods',
+    'k ( ) {\n kubectl get; }',
+    'GITHUB_OUTPUT=$o RELEASE_TYPE=$1 $sh $TMPDIR/w.sh',
+    'for sh in sh dash; do X=1 $sh w.sh; done',
+    'X=1 $K get',
+    'echo $(f() { ls; }; f)',
+  ];
+  for (const c of cases) assert.equal(eff(c), 'deny', c);
+});
+
+test('deny messages', () => {
+  assert.match(analyze('f(){ ls; }', base).message, /Don't define shell functions/);
+  assert.match(analyze('X=1 $K get', base).message, /command word is a variable/);
+});
+
+test('ask: scripts from tmp', () => {
+  assert.equal(eff('cd $TMPDIR && sh w.sh'), 'ask');
+  assert.equal(eff('sh "$TMPDIR/wersja.sh"'), 'ask');
+  assert.equal(eff('GITHUB_OUTPUT=/dev/stdout dash $TMPDIR/w.sh'), 'ask');
+  assert.equal(eff('sh w.sh', { cwd: TMP }), 'ask');
+  assert.equal(eff('./run.sh', { cwd: TMP }), 'ask');
+  assert.equal(eff('bash /private/var/folders/6_/abc/T/opencode/x.sh'), 'ask');
+  assert.equal(eff('bash /var/folders/6_/abc/T/x.sh'), 'ask');
+  assert.equal(eff('sh /tmp/x.sh'), 'ask');
+  assert.equal(eff('bash -e -o pipefail /private/tmp/x.sh'), 'ask');
+  assert.equal(eff('cd ~/faketmp2 && sh x.sh', { tmpRoots: [TMP] }), null);
+  assert.equal(eff('cd /Users/x/faketmp && sh x.sh'), 'ask');
+  assert.equal(eff('(cd $TMPDIR && ls); sh w.sh'), null);
+  assert.match(analyze('sh $TMPDIR/w.sh', base).message, /script from \$TMPDIR/);
+});
+
+test('null: ordinary commands are untouched', () => {
+  const cases = [
+    `awk 'function f(x){return x} {print f($1)}' f`,
+    'echo "a() {"',
+    `jq '.a | select(.b) | {c}' f.json`,
+    `cat <<'EOF' > f.rs\nfn main() { }\nEOF`,
+    `cat <<EOF\nf() { x; }\nEOF`,
+    `cat <<-EOF\n\tf() { x; }\n\tEOF\nls`,
+    'sh tools/build.sh',
+    'LUA=/x/lua bash tools/build-dist.sh $TMPDIR/out',
+    `sh <(yq '.a' .github/workflows/ci.yml)`,
+    `bash -c 'ls'`,
+    'bash -ec "ls"',
+    'echo $HOME',
+    'kill $!',
+    'rm -rf $TMPDIR/x',
+    'kubectl --context admin@k8s get pods',
+    'X=$(pwd) make',
+    'cd $TMPDIR && ls && cat a.txt',
+    'ls # f() { x; }',
+    'git log --oneline | head -5',
+    'echo hi > $TMPDIR/out.txt 2>&1',
+    'arr=(1 2 3); echo ${arr[@]}',
+    'if [ -f x ]; then echo ok; fi',
+    'for f in *.go; do echo "$f"; done',
+    'sh "$@"',
+    'sh',
+    '',
+  ];
+  for (const c of cases) assert.equal(eff(c), null, c);
+});
+
+test('analyze is robust to odd input', () => {
+  for (const c of ['"unterminated', "'x", '$(', '`', '((', 'a() ', '<<', 'cat <<EOF', '${', 'echo $((1+2))']) {
+    assert.doesNotThrow(() => analyze(c, base), c);
+  }
+  assert.doesNotThrow(() => analyze('ls'));
+});
+
+// ---- plugin wiring ---------------------------------------------------------
+
+async function setupPlugin({ sessionGet } = {}) {
+  const hooks = {};
+  const ctx = {
+    tool: { hook: (n, f) => { hooks['tool:' + n] = f; } },
+    permission: { hook: (n, f) => { hooks['perm:' + n] = f; } },
+    session: { get: sessionGet ?? (async () => ({ location: { directory: PROJ } })) },
+  };
+  await plugin.setup(ctx);
+  return hooks;
+}
+const run = (hooks, id, command, effect, extra = {}) => {
+  hooks['tool:execute.before']({ tool: 'shell', sessionID: 'ses1', id, input: { command, ...extra } });
+  const ev = { sessionID: 'ses1', action: 'shell', resources: [command], source: { type: 'tool', id }, effect };
+  return Promise.resolve(hooks['perm:evaluate'](ev)).then(() => ev);
+};
+
+test('plugin shape', () => {
+  assert.equal(plugin.id, 'shell-style');
+  assert.equal(typeof plugin.setup, 'function');
+});
+
+test('wiring: allow -> deny with prefixed message', async () => {
+  const h = await setupPlugin();
+  const ev = await run(h, 'c1', 'k(){ kubectl "$@"; }; k get', 'allow');
+  assert.equal(ev.effect, 'deny');
+  assert.match(ev.message, /^shell-style: Don't define shell functions/);
+});
+
+test('wiring: ask -> deny for deny results', async () => {
+  const h = await setupPlugin();
+  assert.equal((await run(h, 'c2', 'X=1 $K get', 'ask')).effect, 'deny');
+});
+
+test('wiring: allow -> ask for tmp script, ask stays ask', async () => {
+  const h = await setupPlugin();
+  const ev = await run(h, 'c3', 'sh /tmp/x.sh', 'allow');
+  assert.equal(ev.effect, 'ask');
+  assert.match(ev.message, /^shell-style: This runs a script/);
+  assert.equal((await run(h, 'c4', 'sh /tmp/x.sh', 'ask')).effect, 'ask');
+});
+
+test('wiring: incoming deny is never changed', async () => {
+  const h = await setupPlugin();
+  const ev = await run(h, 'c5', 'f(){ ls; }', 'deny');
+  assert.equal(ev.effect, 'deny');
+  assert.equal(ev.message, undefined);
+});
+
+test('wiring: ordinary commands unchanged', async () => {
+  const h = await setupPlugin();
+  const ev = await run(h, 'c6', 'git status', 'allow');
+  assert.equal(ev.effect, 'allow');
+  assert.equal(ev.message, undefined);
+});
+
+test('wiring: stash miss and non-shell actions -> no change', async () => {
+  const h = await setupPlugin();
+  const ev = { sessionID: 's', action: 'shell', resources: ['x'], source: { type: 'tool', id: 'nope' }, effect: 'allow' };
+  await h['perm:evaluate'](ev);
+  assert.equal(ev.effect, 'allow');
+  h['tool:execute.before']({ tool: 'shell', sessionID: 's', id: 'c7', input: { command: 'f(){ ls; }' } });
+  const ev2 = { sessionID: 's', action: 'read', resources: ['x'], source: { type: 'tool', id: 'c7' }, effect: 'allow' };
+  await h['perm:evaluate'](ev2);
+  assert.equal(ev2.effect, 'allow');
+  h['tool:execute.before']({ tool: 'read', sessionID: 's', id: 'c8', input: { command: 'f(){ ls; }' } });
+  const ev3 = { sessionID: 's', action: 'shell', resources: ['x'], source: { type: 'tool', id: 'c8' }, effect: 'allow' };
+  await h['perm:evaluate'](ev3);
+  assert.equal(ev3.effect, 'allow');
+});
+
+test('wiring: relative workdir resolves against session dir', async () => {
+  const h = await setupPlugin({ sessionGet: async () => ({ location: { directory: '/private/tmp' } }) });
+  assert.equal((await run(h, 'c9', 'sh w.sh', 'allow')).effect, 'ask');
+  assert.equal((await run(h, 'c10', 'sh w.sh', 'allow', { workdir: '/Users/x/Projects/p' })).effect, 'allow');
+});
+
+test('wiring: hook exception -> fail-open, no throw', async () => {
+  const origErr = console.error;
+  const logged = [];
+  console.error = (...a) => logged.push(a);
+  try {
+    const h = await setupPlugin({ sessionGet: async () => { throw new Error('boom'); } });
+    const ev = await run(h, 'c11', 'sh w.sh', 'allow'); // needs session dir -> throws
+    assert.equal(ev.effect, 'allow');
+    await run(h, 'c12', 'sh w.sh', 'allow');
+    assert.equal(logged.length, 1, 'logged once');
+    assert.match(String(logged[0][0]), /\[shell-style\]/);
+    // a throwing event object must not throw either
+    const bad = { get action() { throw new Error('x'); } };
+    await assert.doesNotReject(async () => h['perm:evaluate'](bad));
+  } finally {
+    console.error = origErr;
+  }
+});
+
+test('setup ignores foreign contexts', async () => {
+  await assert.doesNotReject(() => plugin.setup({}));
+  await assert.doesNotReject(() => plugin.setup(undefined));
+});

@@ -22,6 +22,7 @@ see `docs/superpowers/specs/2026-06-14-agents-md-slimming-design.md`.)
 │   ├── plans/                 # Implementation plans
 │   └── superpowers/           # Brainstorming specs and plans
 ├── plugins/superpowers.js     # Symlink → superpowers/.opencode/plugins/superpowers.js
+├── plugins/shell-style.js     # Local plugin: tightens shell permission decisions (see "shell-style plugin")
 ├── plugins/mnemoteca.js       # File symlink → ../opencode-mnemoteca/dist/index.js (dangling until built)
 ├── skills/                    # Skill discovery symlinks
 │   ├── anthropics/            # → ../anthropics-skills/skills
@@ -130,6 +131,33 @@ scripts/audit-bash-permissions.py --top 120 --json /tmp/report.json
 scripts/audit-bash-permissions.py --from-json export.json  # reuse an export
 ```
 Periodic review procedure (ask rate, remaining asks, saved "Always" approvals): `docs/permission-review.md`.
+
+### shell-style plugin (`plugins/shell-style.js`)
+Dependency-free OpenCode v2 plugin (`export default { id, setup }` + named export
+`analyze(command, { cwd, tmpRoots, home })`) that **tightens** `shell` permission
+decisions for shapes the wildcard rules cannot judge, with an explanatory
+`shell-style: …` message back to the model:
+- **deny** — shell function definitions (`f() {`, `function f {`); a variable as the command
+  word after `NAME=v` assignments (`X=1 $sh w.sh`, `$K get`).
+- **ask** — scripts run from `$TMPDIR` / `/tmp` / `/var/folders/*/*/T` (`sh w.sh` after
+  `cd $TMPDIR`, `./x.sh`, `bash /tmp/x.sh`); `sh -c …` and `sh <(…)` are left to the config.
+
+It hooks `tool.execute.before` (stashes the command by call id) and `permission.evaluate`
+(looks it up via `source.id`) and only moves a decision allow→ask/deny or ask→deny; it never
+loosens and never touches an incoming `deny`. **Fail-open:** any exception is logged once
+(`[shell-style] …`) and the event is left unchanged, so the config rules still govern.
+Quoted strings, heredoc bodies and comments are ignored; `$( )`, backticks and `<( )` are
+analysed recursively.
+```bash
+node --test scripts/test-shell-style.mjs                 # unit tests (analyze + wiring with a fake ctx)
+SHELL_STYLE_PLUGIN=/abs/dev-copy.js node --test scripts/test-shell-style.mjs   # test a dev copy
+node --check plugins/shell-style.js
+```
+> ⚠ **Every save of a file in `plugins/` hot-reloads the whole OpenCode server and can kill
+> running sessions.** Develop and test on a copy under `$TMPDIR` (point the tests at it with
+> `SHELL_STYLE_PLUGIN`), then write `plugins/shell-style.js` once. The `edit` permission asks
+> for `plugins/**` and bash writes to `plugins/shell-style*` ask, as a speed bump.
+> After the save, check `~/.local/share/opencode/log/opencode.log` for a clean reload.
 
 ## Code Style Guidelines
 
