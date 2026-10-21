@@ -34,6 +34,28 @@ test('deny messages', () => {
   assert.match(analyze('X=1 $K get', base).message, /command word is a variable/);
 });
 
+test('deny: unquoted jsonpath / custom-columns filter expressions', () => {
+  const cases = [
+    'kubectl get pipelinerun -n ci --context admin@k8s -o custom-columns=NAME:.metadata.name,REV:.spec.params[?(@.name==\\"revision\\")].value',
+    'kubectl get pods -o jsonpath={.items[?(@.status.phase=="Running")].metadata.name}',
+    'echo $(kubectl get pods -o jsonpath={.items[?(@.x=="y")].name})',
+  ];
+  for (const c of cases) assert.equal(eff(c), 'deny', c);
+  assert.match(analyze(cases[1], base).message, /Quote the jsonpath/);
+});
+
+test('null: quoted or absent filter expressions', () => {
+  const cases = [
+    `kubectl get pipelinerun -o 'custom-columns=NAME:.metadata.name,REV:.spec.params[?(@.name=="revision")].value'`,
+    `kubectl get pods -o "jsonpath={.items[?(@.x=='y')].name}"`,
+    `jq '.[] | select(.a)' f`,
+    `echo '[?('`,
+    `cat <<'EOF'\n[?(\nEOF`,
+    'ls # [?(',
+  ];
+  for (const c of cases) assert.equal(eff(c), null, c);
+});
+
 test('ask: scripts from tmp', () => {
   assert.equal(eff('cd $TMPDIR && sh w.sh'), 'ask');
   assert.equal(eff('sh "$TMPDIR/wersja.sh"'), 'ask');

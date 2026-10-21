@@ -8,6 +8,8 @@
  *  2. a variable used as the command word after assignments (`X=1 $sh w.sh`)
  *  3. scripts executed or sourced (`sh x`, `./x`, `source x`, `. x`) from $TMPDIR / /tmp
  *     (contents invisible to the rules)
+ *  4. an unquoted jsonpath/custom-columns filter (`[?(` outside quotes) — the parentheses
+ *     parse as a subshell and zsh fails on the glob
  *
  * It only ever makes a decision STRICTER (allow→ask/deny, ask→deny); it never
  * loosens config rules and never touches an incoming `deny`. Any internal error is
@@ -36,6 +38,10 @@ const MSG_VARCMD =
 const MSG_TMPSCRIPT =
   'This runs a script from $TMPDIR — its contents are invisible to the permission rules. ' +
   "Run the commands directly, or for a CI step use `sh <(yq '…' .github/workflows/…)`.";
+const MSG_FILTER =
+  'Quote the jsonpath / custom-columns argument in single quotes ' +
+  '(`-o \'jsonpath={.items[?(@.x=="y")].name}\'`). ' +
+  'Unquoted parentheses are parsed as a subshell and zsh fails on the unquoted glob.';
 
 // Leading words that are shell grammar, not the command itself.
 const RESERVED = new Set([
@@ -132,6 +138,56 @@ function skipDouble(src, open) {
     if (c === '$' && src[i + 1] === '(') i = matchClose(src, i + 1, '(', ')');
   }
   return src.length;
+}
+
+/**
+ * Return `src` with everything the shell would not expand/parse as code removed:
+ * single- and double-quoted text, backslash-escaped characters, comments and
+ * heredoc bodies. Command substitutions stay (their content is unquoted code).
+ * @param {string} src
+ * @returns {string}
+ */
+function unquotedText(src) {
+  let out = '';
+  /** @type {{delim: string, strip: boolean}[]} */
+  let heredocs = [];
+  for (let i = 0; i < src.length; i++) {
+    const c = src[i];
+    if (c === '\\') { i++; out += ' '; continue; }
+    if (c === "'") {
+      const j = src.indexOf("'", i + 1);
+      if (j < 0) break;
+      i = j;
+      out += ' ';
+      continue;
+    }
+    if (c === '"') { i = skipDouble(src, i); out += ' '; continue; }
+    if (c === '#' && (i === 0 || /[\s;&|()]/.test(src[i - 1]))) {
+      while (i + 1 < src.length && src[i + 1] !== '\n') i++;
+      continue;
+    }
+    if (c === '<' && src[i + 1] === '<' && src[i + 2] !== '<' && src[i - 1] !== '<') {
+      const m = /<<(-?)[ \t]*(?:'([^'\n]*)'|"([^"\n]*)"|\\?([\w.-]+))/y;
+      m.lastIndex = i;
+      const r = m.exec(src);
+      if (r) {
+        heredocs.push({ delim: r[2] ?? r[3] ?? r[4], strip: r[1] === '-' });
+        i = m.lastIndex - 1;
+        out += ' ';
+        continue;
+      }
+    }
+    if (c === '\n' && heredocs.length) {
+      let p = i + 1;
+      for (const h of heredocs) p = skipHeredocBody(src, p, h);
+      heredocs = [];
+      i = p - 1;
+      out += '\n';
+      continue;
+    }
+    out += c;
+  }
+  return out;
 }
 
 /**
@@ -526,7 +582,11 @@ export function analyze(command, opts = {}) {
     tmpRoots,
     findings: [],
   };
-  walk(parse(String(command ?? '')), { cwd: opts.cwd ?? null }, ctx);
+  const src = String(command ?? '');
+  if (unquotedText(src).includes('[?(')) {
+    ctx.findings.push({ effect: 'deny', reason: 'unquoted-filter', message: MSG_FILTER });
+  }
+  walk(parse(src), { cwd: opts.cwd ?? null }, ctx);
   const hit = ctx.findings.find((f) => f.effect === 'deny') ?? ctx.findings[0];
   return hit ? { effect: hit.effect, message: hit.message, reason: hit.reason } : { effect: null };
 }

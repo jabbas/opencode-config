@@ -138,7 +138,9 @@ Dependency-free OpenCode v2 plugin (`export default { id, setup }` + named expor
 decisions for shapes the wildcard rules cannot judge, with an explanatory
 `shell-style: …` message back to the model:
 - **deny** — shell function definitions (`f() {`, `function f {`); a variable as the command
-  word after `NAME=v` assignments (`X=1 $sh w.sh`, `$K get`).
+  word after `NAME=v` assignments (`X=1 $sh w.sh`, `$K get`); an **unquoted** filter expression
+  — the sequence `[?(` outside quotes (`-o jsonpath={.items[?(@.x=="y")].name}`,
+  `custom-columns=…[?(@.name==\"r\")]`): the parentheses parse as a subshell and zsh fails on the glob.
 - **ask** — scripts run from `$TMPDIR` / `/tmp` / `/var/folders/*/*/T` (`sh w.sh` after
   `cd $TMPDIR`, `./x.sh`, `bash /tmp/x.sh`) and sourced ones (`source $TMPDIR/env.sh`,
   `. ./x.sh` after `cd $TMPDIR`); `sh -c …`, `sh <(…)` and `source <(…)` are left to the config.
