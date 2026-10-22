@@ -10,6 +10,8 @@
  *     (contents invisible to the rules)
  *  4. an unquoted jsonpath/custom-columns filter (`[?(` outside quotes) — the parentheses
  *     parse as a subshell and zsh fails on the glob
+ *  5. agent-authored text written to a file via the shell (`echo x > f`, `cat > f <<EOF`,
+ *     `tee f <<EOF`, `{ echo a; } > f`) outside tmp — the write/edit tools are the way
  *
  * It only ever makes a decision STRICTER (allow→ask/deny, ask→deny); it never
  * loosens config rules and never touches an incoming `deny`. Any internal error is
@@ -42,6 +44,10 @@ const MSG_FILTER =
   'Quote the jsonpath / custom-columns argument in single quotes ' +
   '(`-o \'jsonpath={.items[?(@.x=="y")].name}\'`). ' +
   'Unquoted parentheses are parsed as a subshell and zsh fails on the unquoted glob.';
+const MSG_FILEWRITE =
+  'Write files with the write/edit tool, not via echo/printf/heredoc redirects — shell-written ' +
+  'content is checked as commands (false prompts) and the user sees no diff. ' +
+  'Shell writes are fine for scratch files in $TMPDIR and for real tool output (`cmd > log`).';
 
 // Leading words that are shell grammar, not the command itself.
 const RESERVED = new Set([
@@ -192,7 +198,9 @@ function unquotedText(src) {
 
 /**
  * @typedef {{text: string, quoted: boolean}} Word
- * @typedef {{words: Word[], children: Cmd[][], funcDef: boolean}} Cmd
+ * @typedef {{op: string, fd: string|null, dup: boolean, target: Word}} Redirect
+ * @typedef {{words: Word[], children: Cmd[][], funcDef: boolean, redirects: Redirect[],
+ *            stdinText: boolean, pipeFrom: Cmd|null}} Cmd
  */
 
 /**
@@ -208,11 +216,14 @@ function parse(src, depth = 0) {
   const commands = [];
   if (depth > MAX_DEPTH) return commands;
   const n = src.length;
-  const newCmd = () => ({ words: [], children: [], funcDef: false });
+  const newCmd = () => ({
+    words: [], children: [], funcDef: false, redirects: [], stdinText: false, pipeFrom: null,
+  });
   let cur = newCmd();
   /** @type {Word|null} */
   let word = null;
-  let pendingRedirect = false;
+  /** @type {{op: string, fd: string|null, dup: boolean}|null} */
+  let pendingRedirect = null;
   /** @type {{strip: boolean}|null} */
   let pendingHeredoc = null;
   /** @type {{delim: string, strip: boolean}[]} */
@@ -226,7 +237,8 @@ function parse(src, depth = 0) {
       heredocs.push({ delim: word.text, strip: pendingHeredoc.strip });
       pendingHeredoc = null;
     } else if (pendingRedirect) {
-      pendingRedirect = false;
+      cur.redirects.push({ ...pendingRedirect, target: word });
+      pendingRedirect = null;
     } else {
       cur.words.push(word);
     }
@@ -234,7 +246,7 @@ function parse(src, depth = 0) {
   };
   const endCommand = () => {
     flushWord();
-    pendingRedirect = false;
+    pendingRedirect = null;
     pendingHeredoc = null;
     if (cur.words.length || cur.children.length || cur.funcDef) commands.push(cur);
     cur = newCmd();
@@ -346,7 +358,9 @@ function parse(src, depth = 0) {
       continue;
     }
     if (c === '|') {
+      const prev = cur;
       endCommand();
+      if (src[i + 1] !== '|') cur.pipeFrom = prev; // a real pipe (not `||`)
       i += src[i + 1] === '|' || src[i + 1] === '&' ? 2 : 1;
       continue;
     }
@@ -389,17 +403,20 @@ function parse(src, depth = 0) {
         i = j + 1;
         continue;
       }
-      if (word && !word.quoted && /^\d+$/.test(word.text)) word = null; // fd number
+      let fd = null;
+      if (word && !word.quoted && /^\d+$/.test(word.text)) { fd = word.text; word = null; } // fd number
       else flushWord();
       let j = i + 1;
       while (j < n && (src[j] === '<' || src[j] === '>')) j++;
       const op = src.slice(i, j);
       let strip = false;
-      if (src[j] === '&') j++;
+      let dup = false;
+      if (src[j] === '&') { j++; dup = true; }
       else if (src[j] === '|' && op === '>') j++;
       else if (op === '<<' && src[j] === '-') { strip = true; j++; }
+      if (op.startsWith('<<')) cur.stdinText = true; // heredoc or herestring
       if (op.startsWith('<<') && op !== '<<<') pendingHeredoc = { strip };
-      else pendingRedirect = true;
+      else pendingRedirect = { op, fd, dup };
       i = j;
       continue;
     }
@@ -489,13 +506,104 @@ const isAssign = (w) => !w.quoted && /^[A-Za-z_]\w*(?:\[[^\]]*\])?\+?=/.test(w.t
  * @param {{home?: string, tmpdir?: string, tmpRoots: string[], findings: object[]}} ctx
  */
 function walk(commands, state, ctx) {
-  for (const cmd of commands) {
+  /** @type {number[]} indices of open `{` group starts */
+  const groups = [];
+  commands.forEach((cmd, idx) => {
     for (const child of cmd.children) walk(child, { cwd: state.cwd }, ctx);
     if (cmd.funcDef) {
       ctx.findings.push({ effect: 'deny', reason: 'shell-function', message: MSG_FUNCTION });
     }
+    // `{ … ; } > f`: the redirect sits on the closing `}` command.
+    const first = cmd.words[0];
+    if (first && !first.quoted && first.text === '{') groups.push(idx);
+    if (first && !first.quoted && first.text === '}' && cmd.words.length === 1 && groups.length) {
+      const start = groups.pop();
+      const body = commands.slice(start, idx);
+      if (body.every((c) => isTextOnlyCmd(c)) && body.some((c) => isTextCmd(c))) {
+        checkFileWrite(cmd, state, ctx, true);
+      }
+    }
+    // `( … ) > f`: a subshell is a command with no words and one child list.
+    if (cmd.words.length === 0 && cmd.children.length === 1) {
+      const body = cmd.children[0];
+      if (body.length && body.every((c) => isTextOnlyCmd(c)) && body.some((c) => isTextCmd(c))) {
+        checkFileWrite(cmd, state, ctx, true);
+      }
+    }
+    checkFileWrite(cmd, state, ctx, false);
     simple(cmd, state, ctx);
+  });
+}
+
+/**
+ * Resolve the command word of a simple command (skipping grammar words,
+ * assignments and wrappers such as `builtin`).
+ * @param {Cmd} cmd
+ * @returns {{name: string|null, args: Word[]}}
+ */
+function headOf(cmd) {
+  const ws = cmd.words;
+  let k = 0;
+  while (k < ws.length && !ws[k].quoted && RESERVED.has(ws[k].text)) k++;
+  while (k < ws.length && isAssign(ws[k])) k++;
+  while (k < ws.length && !ws[k].quoted && WRAPPERS.has(ws[k].text)) k++;
+  if (k >= ws.length) return { name: null, args: [] };
+  return { name: ws[k].text, args: ws.slice(k + 1) };
+}
+
+/**
+ * Does this command produce agent-authored text on stdout? `echo`/`printf`, or
+ * `cat` (without file operands) fed by a heredoc/herestring.
+ * @param {Cmd} cmd
+ * @returns {boolean}
+ */
+function isTextCmd(cmd) {
+  const { name, args } = headOf(cmd);
+  if (name === 'echo' || name === 'printf') return true;
+  if (name === 'cat') return cmd.stdinText && args.every((a) => a.text.startsWith('-'));
+  return false;
+}
+
+/**
+ * A command that may appear inside a `{ … }` / `( … )` group whose output is flagged:
+ * text producers, bare grammar words (`{`, `}`) and empty commands.
+ * @param {Cmd} cmd
+ * @returns {boolean}
+ */
+function isTextOnlyCmd(cmd) {
+  if (cmd.funcDef) return false;
+  return headOf(cmd).name === null || isTextCmd(cmd);
+}
+
+/**
+ * Flag agent-authored text written to a file outside tmp via a shell redirect or `tee`.
+ * @param {Cmd} cmd
+ * @param {{cwd: string|null}} state
+ * @param {object} ctx
+ * @param {boolean} group `cmd` is the redirect carrier of an all-text `{ }` / `( )` group
+ */
+function checkFileWrite(cmd, state, ctx, group) {
+  const { name, args } = headOf(cmd);
+  const outside = (word) => {
+    const p = resolvePath(word.text, state.cwd, ctx);
+    if (!p) return false;
+    const q = canon(p);
+    return !(q === '/dev' || q.startsWith('/dev/')) && !inTmp(q, ctx.tmpRoots);
+  };
+  const flag = () => ctx.findings.push({ effect: 'deny', reason: 'file-write', message: MSG_FILEWRITE });
+
+  if (name === 'tee' && !group) {
+    const files = args.filter((a) => !a.text.startsWith('-'));
+    const fed = cmd.stdinText || (cmd.pipeFrom !== null && isTextCmd(cmd.pipeFrom));
+    if (fed && files.some(outside)) flag();
+    return;
   }
+  const producer = group || (!cmd.funcDef && isTextCmd(cmd));
+  if (!producer) return;
+  const writes = cmd.redirects.some(
+    (r) => !r.dup && (r.fd === null || r.fd === '1') && /^>[>|]?$/.test(r.op) && outside(r.target),
+  );
+  if (writes) flag();
 }
 
 /**

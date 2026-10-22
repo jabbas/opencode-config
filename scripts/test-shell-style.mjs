@@ -108,7 +108,6 @@ test('null: ordinary commands are untouched', () => {
     `awk 'function f(x){return x} {print f($1)}' f`,
     'echo "a() {"',
     `jq '.a | select(.b) | {c}' f.json`,
-    `cat <<'EOF' > f.rs\nfn main() { }\nEOF`,
     `cat <<EOF\nf() { x; }\nEOF`,
     `cat <<-EOF\n\tf() { x; }\n\tEOF\nls`,
     'sh tools/build.sh',
@@ -131,6 +130,76 @@ test('null: ordinary commands are untouched', () => {
     'sh "$@"',
     'sh',
     '',
+  ];
+  for (const c of cases) assert.equal(eff(c), null, c);
+});
+
+test('deny: agent-authored text written to a file outside tmp', () => {
+  const cases = [
+    'mkdir -p .superpowers/sdd/plan-2 && {\necho "# Raport"\necho\necho "- Commit: x"\n} > .superpowers/sdd/plan-2/report.md',
+    `cat > src/lib.rs <<'EOF'\nfn main() {}\nEOF`,
+    `cat <<'EOF' > f.rs\nfn main() { }\nEOF`,
+    'echo hello > README.md',
+    "printf 'a\\nb\\n' >> notes.txt",
+    'echo hi >| notes.txt',
+    'echo hi &> out.log',
+    'builtin echo hi > README.md',
+    'echo hi > /Users/x/Projects/p/a.md',
+    'echo hi > ~/notes.md',
+    'echo hi > $HOME/notes.md',
+    'echo "$(date)" > stamp.txt',
+    'cd /Users/x/Projects/q && echo hi > a.md',
+    `cat <<EOF > .github/workflows/x.yml\nname: x\nEOF`,
+    `cat >> f <<-EOF\n\tx\n\tEOF`,
+    'cat > f <<< "x"',
+    `tee docs/a.md <<EOF\nx\nEOF`,
+    `tee -a docs/a.md <<< "x"`,
+    'echo hi | tee docs/a.md',
+    `cat <<EOF | tee out.txt\nx\nEOF`,
+    '{ echo a; echo b; } > f.txt',
+    '( echo a; printf b ) > f.txt',
+    `{ cat <<EOF\nx\nEOF\n} > f.txt`,
+    'for f in a b; do echo $f > out.txt; done',
+  ];
+  for (const c of cases) assert.equal(eff(c), 'deny', c);
+  assert.match(analyze('echo hello > README.md', base).message, /Write files with the write\/edit tool/);
+});
+
+test('null: tool output, tmp and device redirects are not flagged', () => {
+  const cases = [
+    'cargo test > log.txt',
+    'git diff > x.patch',
+    `yq '.a' f > out.yaml`,
+    'jq . a > b',
+    'curl -o f https://x',
+    'echo x > $TMPDIR/a',
+    'echo x >> /tmp/a',
+    'echo x > /private/tmp/a',
+    `echo x > ${TMP}/a`,
+    'cd $TMPDIR && echo x > a',
+    'echo x > /dev/null',
+    'echo x > /dev/stderr',
+    'printf x >&2',
+    'echo x 2>&1',
+    'echo x 2> err.log',
+    `cat <<EOF | kubectl apply -f -\nx\nEOF`,
+    'cat a b > c',
+    'cat a.txt | tee out.txt',
+    'cargo test | tee log.txt',
+    'echo x | tee $TMPDIR/a',
+    'echo x | tee',
+    'echo "echo hi > f"',
+    `cat <<'EOF'\necho hi > f\nEOF`,
+    `cat <<EOF > $TMPDIR/a\nx\nEOF`,
+    '{ echo a; ls; } > f.txt',
+    '( cd x; echo a ) > f.txt',
+    '{ echo a; } > $TMPDIR/f.txt',
+    'echo hi > $UNKNOWN/a', // unresolvable target: fail open
+    'for f in a b; do echo $f > out-$f.txt; done',
+    'cd "$DIR" && echo hi > a.md', // unknown cwd
+    'echo hi',
+    'cat < in.txt',
+    'cat <<EOF\nx\nEOF',
   ];
   for (const c of cases) assert.equal(eff(c), null, c);
 });

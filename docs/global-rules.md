@@ -16,6 +16,7 @@
 - Do NOT write file contents via the shell: no `cat > f <<EOF`, `echo`/`printf > f`, `tee f`, `sed -i`, `perl -i`, `python3`/`node` scripts that open files for writing, or shell functions/aliases that write files
 - Allowed shell writes: scratch files in `$TMPDIR` (never bare `/tmp`); output of real tools (formatters such as `cargo fmt`/`ruff format`, code generators, build artefacts, `git` operations, package managers); downloads with `curl -o`
 - NEVER write OpenCode config through the shell (`~/.config/opencode/opencode.json*`, `agents/`, `secrets/`, any `.opencode/`) — use edit/write so the user gets the permission prompt
+- The `shell-style` plugin denies echo/printf/heredoc writes to files outside `$TMPDIR` with an explanation.
 
 ## Shell Command Style
 

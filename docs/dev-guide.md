@@ -140,7 +140,13 @@ decisions for shapes the wildcard rules cannot judge, with an explanatory
 - **deny** — shell function definitions (`f() {`, `function f {`); a variable as the command
   word after `NAME=v` assignments (`X=1 $sh w.sh`, `$K get`); an **unquoted** filter expression
   — the sequence `[?(` outside quotes (`-o jsonpath={.items[?(@.x=="y")].name}`,
-  `custom-columns=…[?(@.name==\"r\")]`): the parentheses parse as a subshell and zsh fails on the glob.
+  `custom-columns=…[?(@.name==\"r\")]`): the parentheses parse as a subshell and zsh fails on the glob;
+  **agent-authored text written to a file outside tmp** — a stdout redirect (`>`, `>>`, `>|`, `&>`)
+  on `echo`/`printf` (incl. `builtin echo`) or on `cat` fed by a heredoc/herestring, `tee FILE` fed
+  by a heredoc/herestring or piped from `echo`/`printf`/`cat <<EOF`, and `{ …; } > f` / `( … ) > f`
+  groups made only of such commands (any other command in the group → not flagged). Targets in tmp
+  roots, `/dev/*`, fd dups (`>&2`), unresolvable targets (unknown `$VAR`/cwd) and real tool output
+  (`cargo test > log`, `cat a b > c`) are not flagged; `echo "$(cmd)" > f` is flagged.
 - **ask** — scripts run from `$TMPDIR` / `/tmp` / `/var/folders/*/*/T` (`sh w.sh` after
   `cd $TMPDIR`, `./x.sh`, `bash /tmp/x.sh`) and sourced ones (`source $TMPDIR/env.sh`,
   `. ./x.sh` after `cd $TMPDIR`); `sh -c …`, `sh <(…)` and `source <(…)` are left to the config.
