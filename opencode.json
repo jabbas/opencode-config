@@ -448,6 +448,7 @@
       "rustup which *": "allow",
       "rustup toolchain list*": "allow",
       "rustup component list*": "allow",
+      "rustup target list*": "allow",
       "cargo-deny *": "allow",
       "cargo-audit *": "allow",
       "brew --cache *": "allow",
