@@ -129,6 +129,12 @@ These apply to every agent (this file is injected globally via `Instruction.syst
 
 `plugins/shell-style.js` tightens shell decisions (shell functions, variable command words, tmp scripts) with explanatory denial messages; it never loosens config rules. Editing `plugins/*` hot-reloads the server — develop on a copy. Details: `docs/dev-guide.md`.
 
+## Permission-Model Plugin (shadow)
+
+- `plugins/permission-model/` runs in **shadow** mode: it only logs what it would decide; the current `opencode.json` permission rules are unchanged and still enforce until `mode: enforce` (spec: `docs/superpowers/specs/2026-10-22-permission-model-v2-design.md`).
+- Log: `~/.local/share/opencode/permission-model/decisions.jsonl`; liveness: `node scripts/permission-model/check-alive.mjs`; report: `node scripts/permission-model/log-report.mjs`.
+- Editing `plugins/permission-model/*` hot-reloads the server — develop on a copy. Details: `docs/dev-guide.md` ("permission-model plugin").
+
 ## Periodic Permission Review
 
 - The **coordinator** (never a subagent) checks project memory at session start for

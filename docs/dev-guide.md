@@ -168,6 +168,65 @@ node --check plugins/shell-style.js
 > for `plugins/**` and bash writes to `plugins/shell-style*` ask, as a speed bump.
 > After the save, check `~/.local/share/opencode/log/opencode.log` for a clean reload.
 
+### permission-model plugin (`plugins/permission-model/`)
+Successor of `shell-style` (which stays until Task 10 removes it). Dependency-free OpenCode v2
+**directory** plugin (`index.js` entrypoint) implementing permission model v2 — spec:
+`docs/superpowers/specs/2026-10-22-permission-model-v2-design.md`; module overview and loader
+details: `plugins/permission-model/README.md`.
+
+**What it decides.** For every `shell`, `read`, `edit` and `write` permission request it parses the
+command (unwraps `sudo`/`env`/`sh -c`/…, resolves variables best-effort), classifies it (read,
+local-write, ext-write, irreversible, secret, opaque, …) and the **target** it acts on (kubectl
+context, AWS profile, GitHub repo, … → class `dev` / `home` / `prod` / `unknown`, unknown = prod), and
+produces `allow` / `ask` / `deny`. It reconciles that with the incoming `effect` (config + saved approvals)
+and, in enforce mode, can both tighten and loosen it. Fail-safe: any error or a decision slower than
+250 ms yields an `ERROR` log line and, **in enforce mode only**, `ask` (never `allow`); in shadow the
+request is left untouched and the error is only logged.
+
+**Modes** (`mode` in the config; default `shadow`):
+- `shadow` — only logs what the plugin *would* decide next to what the config decided; `ev.effect` is
+  never touched, so today's `opencode.json` rules keep enforcing.
+- `enforce` — the plugin's decision is applied (`ev.effect`, plus an explanatory `ev.message`). Switched on
+  only together with the slim `opencode.json` in one commit (spec §6).
+
+**Config:** `permission-model.json` (shared, committed) + `permission-model.local.json` (per machine,
+gitignored; arrays **replace**, objects deep-merge — e.g. work profiles in `targets.dev|prod`). Reloaded
+at most every 10 s. A broken file → `CONFIG_ERROR` log line; with enforce known/configured the plugin
+asks for everything until it is fixed. Env overrides for tests/ops: `PM_CONFIG_DIR`, `PM_LOG_FILE`,
+`PM_ALIVE_FILE`.
+
+**Log + alive marker** (`~/.local/share/opencode/permission-model/`):
+- `decisions.jsonl` — one JSON line per request: `{ ts, sessionID, agent, action, resource, cls,
+  target:{kind,name,cls}, incoming, decided, applied, mode, reason, ms }` (heredoc bodies and
+  `password|token|secret=` values are redacted, resource ≤ 300 chars). Special `cls`: `ERROR`, `CONFIG_ERROR`.
+- `alive` — `{pid, ts, mode}` rewritten at most every 10 s. `node scripts/permission-model/check-alive.mjs`
+  prints age / mode / pid and exits 1 when the marker is missing or older than 300 s (use it after any
+  plugin edit and in session start checks).
+- Report: `node scripts/permission-model/log-report.mjs [file] [--since ISO] [--json]` — counts by
+  mode/action/agent, `wouldChange` (allow→ask = new questions, ask→allow = questions that disappear,
+  →deny, deny kept), top asks with example commands, errors, active hours (sum of gaps ≤ 5 min) and
+  asks/hour for config vs plugin. Review the shadow report before switching to `enforce`.
+
+**"Always" is ineffective for some classes.** The hook only sees the merged `effect` (config + saved
+approvals), so the plugin decides per class (`reconcile` in `decide.js`). A saved approval is
+**honoured only** for `local-read`, `local-write`, `ext-read`, and `ext-write` on a dev/home target.
+For every other class it is **ignored** (the request is evaluated every time): prod/unknown writes,
+`irreversible`, `secret-ask`, `own-config`, `opaque` and `local-ask`. The "Always" button is still
+shown in the prompt but has no effect there (for secret reads native `read` saves the approval as
+`*`, which would otherwise unlock every read). An incoming `deny` is never weakened.
+
+**Develop on a copy** — every save of a file under `plugins/` hot-reloads the plugin and can restart
+the server. Work in `$TMPDIR`, point the tests at the copy with `PM_PLUGIN_DIR`, copy over once.
+```bash
+node --test scripts/permission-model/                      # all unit tests (parser, unwrap, target, classify, decide, paths, config, plugin, replay, log-report)
+node --test scripts/permission-model/test-log-report.mjs   # report only
+PM_PLUGIN_DIR=$TMPDIR/opencode/pm-dev/permission-model node --test scripts/permission-model/
+PM_STRICT=1 node --test scripts/permission-model/test-replay.mjs   # known divergences not tolerated
+node scripts/permission-model/replay.mjs                   # replay the audit corpus through decideShell (see fixtures/README.md)
+```
+Replay fixtures (`fixtures/audit-commands*.json`, `expected-decisions.json`, `known-divergences.json`)
+hold real commands and are generated locally / gitignored; tests that need them skip on a fresh clone.
+
 ## Code Style Guidelines
 
 ### JavaScript (ES Modules)
