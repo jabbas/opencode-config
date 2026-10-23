@@ -11,6 +11,7 @@
 // Pure function: no I/O besides `canonical()` (realpath of existing ancestors) from paths.js.
 // Rule order (first match wins) is documented at `classify()`.
 
+import nodePath from "node:path"
 import * as paths from "./paths.js"
 import { matchAny, wildcardToRegExp } from "./match.js"
 
@@ -67,7 +68,7 @@ const GROUPS = {
   kubectl: ["config", "rollout", "auth", "set", "certificate"],
   helm: ["dependency", "repo", "plugin", "show", "get"],
   flux: ["create", "bootstrap"],
-  talosctl: ["config", "etcd", "inspect", "image", "cluster"],
+  talosctl: ["config", "etcd", "inspect", "image", "cluster", "gen", "machineconfig"],
   gh: ["pr", "run", "workflow", "issue", "repo", "release", "auth", "secret", "variable", "cache", "label", "gist", "project", "ruleset"],
   jk: ["job", "run", "context", "auth", "artifact", "test", "cred", "node", "queue", "plugin"],
   wrangler: ["versions", "deployments", "kv", "d1", "r2", "secret"],
@@ -224,7 +225,37 @@ const NO_TARGET_TOOLS = new Set([
 ])
 
 const SHELLS = new Set(["sh", "bash", "zsh", "dash", "ksh"])
-const INTERPRETERS = /^(?:python[\d.]*|node|ruby|perl|php|bun|deno)$/
+const INTERPRETERS = /^(?:python[\d.]*|node|ruby|perl|php|bun|deno|lua[\d.]*|luajit[\d.-]*)$/
+// package-manager style sub-commands of bun / deno: the word after them is not a script path
+const RUNTIME_SUBCOMMANDS = new Set([
+  "install", "i", "add", "a", "remove", "rm", "update", "upgrade", "outdated", "link", "unlink", "pm", "init", "create",
+  "test", "build", "x", "repl", "publish", "info", "patch", "audit", "why", "completions", "help", "version", "cache",
+  "check", "fmt", "lint", "doc", "bench", "compile", "task", "types", "uninstall", "eval", "jupyter", "bundle", "coverage",
+])
+
+/** Flag that introduces INLINE code for this interpreter/shell (`-c`, `-e`, `-m`, node `-p`, php `-r`). */
+function isCodeFlag(base, a) {
+  if (SHELLS.has(base)) return /^-[A-Za-z]*c$/.test(a)
+  if (base === "node") return /^-[A-Za-z]*[cemp]$/.test(a) || a === "--eval" || a === "--print"
+  if (base === "php") return /^-[A-Za-z]*[cemr]$/.test(a)
+  return /^-[A-Za-z]*[cem]$/.test(a)
+}
+
+/**
+ * The script PATH an interpreter/shell is asked to run, or undefined when there is none:
+ * `-` means stdin (a heredoc is data), `bun install` / `deno task` are sub-commands, `bun run x.ts` → x.ts.
+ */
+function scriptOperand(base, args) {
+  const pos = positionals(args)
+  let s = pos[0]
+  if (base === "bun" || base === "deno") {
+    if (s === "run") s = pos[1]
+    else if (RUNTIME_SUBCOMMANDS.has(s)) return undefined
+    if (s !== undefined && !/[/.]/.test(s)) return undefined // `bun dev` is a package script, not a file
+  }
+  if (s === undefined || s === "-") return undefined
+  return s
+}
 
 const GENERIC_READ =
   /^(?:get|describe|list|ls|show|status|logs?|view|watch|history|diff|explain|top|events?|search|version|whoami|info|help|inspect|ps|(?:describe|list|get|head|search|lookup|filter|select)-.+)$/
@@ -240,6 +271,9 @@ const TARGET_FLAGS = {
   talosctl: ["-n", "--nodes", "-e", "--endpoints", "--context", "--talosconfig"],
   gh: ["-R", "--repo"],
 }
+
+// kubeseal flags that talk to the cluster / sealed-secrets controller
+const KUBESEAL_CLUSTER_FLAGS = new Set(["--controller-name", "--controller-namespace", "--kubeconfig", "--context", "--fetch-cert", "--validate", "--re-encrypt"])
 
 const K8S_ALIASES = {
   namespaces: "namespace", nses: "ns", persistentvolumes: "pv", persistentvolume: "pv", persistentvolumeclaims: "pvc",
@@ -327,6 +361,40 @@ function tarTargets(args) {
   if (letters.includes("x")) {
     if (dir) out.push({ p: dir, dir: true })
     out.push({ p: "", marker: true })
+  }
+  return out
+}
+
+/**
+ * tar arguments for path probing: `-C DIR` / `--directory DIR` are dropped (a chdir reads nothing) and
+ * every later relative member is joined onto DIR, so `tar c -C ~/.ssh .` still reads ~/.ssh.
+ */
+function tarPathArgs(args) {
+  const out = []
+  let dir
+  const join = (w) => (dir && w !== "" && !/^[/~$]/.test(w) ? `${dir.replace(/\/+$/, "")}/${w}` : w)
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]
+    if (a === "--") {
+      out.push(a, ...args.slice(i + 1).map(join))
+      break
+    }
+    if (a.startsWith("--")) {
+      if (a === "--directory") dir = args[++i]
+      else if (a.startsWith("--directory=")) dir = a.slice(12)
+      else out.push(a)
+      continue
+    }
+    const cluster = a.startsWith("-") ? a.slice(1) : i === 0 ? a : ""
+    if (!cluster) {
+      out.push(join(a))
+      continue
+    }
+    out.push(a)
+    for (const ch of cluster) {
+      if (ch === "C") dir = args[++i]
+      else if (ch === "f" && i + 1 < args.length) out.push(args[++i]) // the archive itself
+    }
   }
   return out
 }
@@ -454,7 +522,15 @@ function writeTargets(inv, base, args, verb) {
       const writes = verb && !GIT_READ.has(verb) && !(GIT_LISTY.has(verb) && gitListy(verb, args))
       if (writes) {
         const vi = args.indexOf(verb)
-        for (const d of flagValues(args.slice(0, vi < 0 ? 0 : vi), ["-C", "--work-tree"])) out.push({ p: d, dir: true })
+        const dirs = flagValues(args.slice(0, vi < 0 ? 0 : vi), ["-C", "--work-tree"])
+        for (const d of dirs) out.push({ p: d, dir: true })
+        if (verb === "mv" || verb === "rm") {
+          // `git mv a b` / `git rm f` change the working tree: every path operand (relative to `-C DIR`)
+          const dir = dirs[dirs.length - 1]
+          const at = (p) => (dir && !/^[/~$]/.test(p) ? `${dir.replace(/\/+$/, "")}/${p}` : p)
+          const ops = positionals(args.slice(vi + 1))
+          ops.forEach((p, k) => out.push(verb === "mv" && k < ops.length - 1 ? { p: at(p), src: true } : { p: at(p) }))
+        }
       }
       break
     }
@@ -571,19 +647,25 @@ function classifyHttp(base, args) {
 // gh api
 
 function ghApiWrites(rest) {
+  // an explicit `-X GET` turns -f/-F fields into query parameters (a read); without a method they make a POST
+  let explicitGet = false
+  let fields = false
   for (let i = 0; i < rest.length; i++) {
     const a = rest[i]
     if (a === "--") break
     if (a === "-X" || a === "--method") {
       if (String(rest[i + 1] ?? "").toUpperCase() !== "GET") return true
+      explicitGet = true
     } else if (a.startsWith("--method=")) {
       if (a.slice(9).toUpperCase() !== "GET") return true
+      explicitGet = true
     } else if (/^-X./.test(a)) {
       if (a.slice(2).toUpperCase() !== "GET") return true
-    } else if (["-f", "-F", "--field", "--raw-field", "--input"].includes(a)) return true
-    else if (/^-[fF]./.test(a) || /^--(?:field|raw-field|input)=/.test(a)) return true
+      explicitGet = true
+    } else if (a === "--input" || /^--input=/.test(a)) return true // a request body
+    else if (["-f", "-F", "--field", "--raw-field"].includes(a) || /^-[fF]./.test(a) || /^--(?:field|raw-field)=/.test(a)) fields = true
   }
-  return false
+  return fields && (!explicitGet || rest.includes("graphql")) // graphql is POSTed whatever -X says
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -635,6 +717,38 @@ function namespaceValues(args) {
   return out
 }
 
+/** `-o X` / `-oX` / `-o=X` / `--output X` / `--output=X` → X (last one wins); undefined when absent. */
+function outputValue(rest) {
+  let out
+  for (let i = 0; i < rest.length; i++) {
+    const a = rest[i]
+    if (a === "--") break
+    if (a === "-o" || a === "--output") out = rest[++i]
+    else if (a.startsWith("--output=") || a.startsWith("-o=")) out = a.slice(a.indexOf("=") + 1)
+    else if (/^-o./.test(a) && !a.startsWith("--")) out = a.slice(2)
+  }
+  return out
+}
+
+/**
+ * `kubectl get secret(s)[/name] … -o <anything but name|wide>` dumps secret data. Structural: the first
+ * positional after `get` must BE the resource `secret`/`secrets` (optionally `secret/NAME`, `secrets.v1`,
+ * comma lists) — a CRD / deployment / namespace merely containing the substring (`secretspecs`) is not.
+ */
+function kubectlSecretDump(tool, args) {
+  for (const c of verbCandidates(tool, args).cands) {
+    if (c.v.verb !== "get") continue
+    const first = kubectlPositionals(c.v.rest)[0]
+    if (first === undefined) continue
+    const isSecret = first.split(",").some((tok) => /^secrets?$/.test(normResource(tok)))
+    if (!isSecret) continue
+    const out = outputValue(c.v.rest)
+    if (out === undefined || out === "name" || out === "wide") continue
+    return true
+  }
+  return false
+}
+
 function kubectlDeleteInfo(v, allArgs) {
   const rest = v.rest
   const pos = kubectlPositionals(rest)
@@ -675,12 +789,92 @@ function kubectlTexts(v, main, allArgs) {
 const CONFIG_FLAGS = new Set(["--kubeconfig", "--talosconfig", "--config", "--kube-config"])
 const KEY_FILE_TOOLS = new Set(["ssh", "scp", "sftp"])
 
+// ---- program / pattern operands: the first operand of grep, sed, awk, jq … is NOT a path -----------
+
+const GREP_TOOLS = new Set(["grep", "egrep", "fgrep", "rg", "ag", "ack"])
+const AWK_TOOLS = new Set(["awk", "gawk", "mawk", "nawk"])
+// value-taking short/long options per tool family (their value is never the pattern/program operand)
+const GREP_VALUE_FLAGS = new Set(["-m", "-A", "-B", "-C", "-d", "-D", "-g", "-t", "-T", "--glob", "--type", "--type-not", "--include", "--exclude", "--exclude-dir", "--max-count", "--after-context", "--before-context", "--context", "--max-depth", "--threads", "--label", "--sort", "--sortr"])
+const FILTER_VALUE_FLAGS = new Set(["--indent", "-L", "--seq"]) // jq options with one value
+const FIND_PATTERN_FLAGS = new Set(["-name", "-iname", "-path", "-ipath", "-wholename", "-iwholename", "-regex", "-iregex", "-lname", "-ilname", "-newer", "-user", "-group", "-perm", "-type", "-size", "-mtime", "-atime", "-ctime", "-mmin", "-amin", "-cmin", "-maxdepth", "-mindepth", "-xtype", "-fstype"])
+
+/**
+ * Indexes (into `args`) of words that are a pattern / program / filter / name pattern — not a file the
+ * command reads: the first operand of grep/rg/sed/awk/jq/yq (unless -e/-f supplies it), the value of
+ * `-e` and of find's `-name`-style tests. A `-f FILE` value stays a path (it IS read).
+ */
+function programIndexes(base, args) {
+  const skip = new Set()
+  if (base === "find") {
+    for (let i = 0; i < args.length; i++) if (FIND_PATTERN_FLAGS.has(args[i]) && i + 1 < args.length) skip.add(++i)
+    return skip
+  }
+  const grep = GREP_TOOLS.has(base)
+  const sed = base === "sed"
+  const awk = AWK_TOOLS.has(base)
+  const jq = base === "jq" || base === "yq"
+  if (!grep && !sed && !awk && !jq) return skip
+  if (grep && base === "rg" && args.includes("--files")) return skip // rg --files: every operand is a path
+  let haveProgram = false // -e / -f / --expression / --file already supplied the pattern/program
+  let operand = -1
+  let afterDD = false
+  for (let i = 0; i < args.length; i++) {
+    const a = args[i]
+    if (afterDD) {
+      if (operand < 0) operand = i
+      break
+    }
+    if (a === "--") {
+      afterDD = true
+      continue
+    }
+    // -e PATTERN / --expression=… (jq's -e is a boolean flag, awk has none)
+    if ((grep || sed) && (a === "--regexp" || a === "--expression" || /^--(?:regexp|expression)=/.test(a) || /^-[A-Za-z]*e$/.test(a))) {
+      haveProgram = true
+      if (!a.includes("=") && i + 1 < args.length) skip.add(++i)
+      continue
+    }
+    // -f FILE: the program/patterns come from a file, which IS read (stays a path candidate)
+    if (a === "--file" || a === "--from-file" || /^--(?:file|from-file)=/.test(a) || (!a.startsWith("--") && /^-[A-Za-z]*f$/.test(a))) {
+      haveProgram = true
+      if (!a.includes("=")) i++
+      continue
+    }
+    if (a.startsWith("-") && a.length > 1) {
+      if (grep && (GREP_VALUE_FLAGS.has(a) || (base === "rg" && (a === "--color" || a === "--colors")))) i++
+      else if (awk && (a === "-F" || a === "-v" || a === "-W")) i++
+      else if (jq && (a === "--arg" || a === "--argjson")) i += 2
+      else if (jq && (a === "--slurpfile" || a === "--rawfile")) i++ // name; the FILE after it stays a path
+      else if (jq && FILTER_VALUE_FLAGS.has(a)) i++
+      continue
+    }
+    if (a === "") continue
+    if (operand < 0) operand = i
+    break
+  }
+  if (!haveProgram && operand >= 0) {
+    let idx = operand
+    // yq eval 'EXPR' file  /  yq e 'EXPR' file: the first operand is a sub-command
+    if (base === "yq" && /^(?:e|eval|eval-all|ea|e-all)$/.test(args[idx])) {
+      skip.add(idx)
+      idx = -1
+      for (let j = operand + 1; j < args.length; j++) {
+        if (args[j] === "" || (args[j].startsWith("-") && args[j].length > 1)) continue
+        idx = j
+        break
+      }
+    }
+    if (idx >= 0) skip.add(idx)
+  }
+  return skip
+}
+
 /** Raw candidate path words: [{ w, cfgVal }] (dynamic words are filtered later, after variants). */
-function pathWords(base, args) {
+function pathWords(base, args, skip = new Set()) {
   const out = []
   for (let i = 0; i < args.length; i++) {
     let a = args[i]
-    if (a === "") continue
+    if (a === "" || skip.has(i)) continue
     let cfgVal = false
     if (a.startsWith("--") && a.includes("=")) {
       const name = a.slice(0, a.indexOf("="))
@@ -802,6 +996,33 @@ function containsProtected(a, patterns, home) {
   return false
 }
 
+/**
+ * Does reading the directory `a` recursively read something the patterns protect? Only when `a` IS the
+ * directory part of a pattern (`~/.ssh` for `~/.ssh/id_*`, `~/.local/share/opencode` for the exact file
+ * `~/.local/share/opencode/auth.json`) — never a broad parent such as `~/.local/share` that merely
+ * contains it. (containsProtected() keeps the ancestor semantics for REMOVING own-config.)
+ */
+function containsReadable(a, patterns, home) {
+  const as = segs(a)
+  for (const p of patterns ?? []) {
+    for (const pp of expandPattern(p, home)) {
+      const ps = segs(pp)
+      const lit = []
+      let globbed = false
+      for (const s of ps) {
+        if (s === "**" || GLOB_CH.test(s)) {
+          globbed = true
+          break
+        }
+        lit.push(s)
+      }
+      const dirPart = globbed ? lit : lit.slice(0, -1) // exact file → its directory
+      if (dirPart.length > 0 && as.length === dirPart.length && as.every((s, i) => s.toLowerCase() === dirPart[i].toLowerCase())) return true
+    }
+  }
+  return false
+}
+
 const RECURSIVE_TOOLS = new Set(["rg", "ag", "ack", "zip"])
 const RECURSIVE_FLAG_TOOLS = new Set(["cp", "grep", "egrep", "fgrep", "scp"])
 const isExtractingTar = (args) => args.some((a) => a === "--extract" || a === "--get" || (!a.startsWith("--") && /^-?[A-Za-z]*x[A-Za-z]*$/.test(a)))
@@ -842,6 +1063,12 @@ export function classify(inv, target, cfg, ctx = {}) {
   const v = verbOf(base, args)
   const abs = (p) => canonical(p, cwd, home)
   const realTmp = tmpRoots.map((r) => abs(r))
+  // `D=$TMPDIR/x; bash $D/y.sh`: literal variables assigned earlier in the same command (unwrap's inv.vars)
+  const withVars = (s) => {
+    const vars = inv?.vars
+    if (!vars || typeof s !== "string" || !s.includes("$")) return s
+    return s.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g, (m, a, b) => vars[a ?? b] ?? m)
+  }
   const inTmp = (p) => {
     if (/^(?:\$TMPDIR|\$\{TMPDIR\})(?:\/|$)/.test(p)) return true
     if (isDyn(p)) return false
@@ -864,7 +1091,9 @@ export function classify(inv, target, cfg, ctx = {}) {
   }
   const recursive = isRecursiveRead(base, args)
   const candidates = []
-  for (const c of [...pathWords(base, args), ...redirectWords]) {
+  // tar: `-C DIR` is a chdir (not a read of DIR); relative members are read from inside DIR
+  const wordArgs = base === "tar" ? tarPathArgs(args) : args
+  for (const c of [...pathWords(base, wordArgs, programIndexes(base, wordArgs)), ...redirectWords]) {
     for (const variant of wordVariants(c.w)) {
       if (variant.includes("://") || variant.includes("`")) continue
       if (variant.includes("$") && !/^(?:\$HOME|\$\{HOME\}|\$TMPDIR|\$\{TMPDIR\})(?:\/|$)/.test(variant)) continue
@@ -885,7 +1114,7 @@ export function classify(inv, target, cfg, ctx = {}) {
     if (isGlobWord(c.w)) hit = globReaches(abs(c.w), denyDirs, sd.pathAllow, home)
     else {
       hit = pc(c.w) === "secret-deny"
-      if (!hit && recursive && c.w !== destWord && containsProtected(abs(c.w), denyDirs, home)) hit = true
+      if (!hit && recursive && c.w !== destWord && containsReadable(abs(c.w), denyDirs, home)) hit = true
     }
     if (hit) return res("secret-deny", "secret-path", { detail: c.w })
   }
@@ -903,15 +1132,27 @@ export function classify(inv, target, cfg, ctx = {}) {
     if (typeof paths.globMatch === "function") return ownPatterns.some((p) => paths.globMatch(p, a, home))
     return pathClassFn(a, cfg, pctx) === "own-config"
   }
-  const mvSources = base === "mv" ? positionals(args).slice(0, -1) : []
+  const gitMove = base === "git" && (verbForGit === "mv" || verbForGit === "rm")
+  const mvSources = base === "mv" ? positionals(args).slice(0, -1) : gitMove && verbForGit === "mv" ? writes.filter((w) => w.src).map((w) => w.p) : []
+  // the lexical path (symlinks NOT followed): `ln -sf x plugins/a.js` / `rm` / `mv` replace the link itself
+  const lexical = (p) => {
+    let s = p
+    if (home && (s === "~" || s.startsWith("~/"))) s = home + s.slice(1)
+    else if (home && (s === "$HOME" || s.startsWith("$HOME/"))) s = home + s.slice(5)
+    else if (home && (s === "${HOME}" || s.startsWith("${HOME}/"))) s = home + s.slice(7)
+    return nodePath.resolve(cwd || "/", s)
+  }
   for (const w of writes) {
     if (w.marker || !w.p || isDyn(w.p)) continue
     const expanded = expandTmp(w.p)
     if (!expanded) continue
     const a = abs(expanded) // resolves `..` too
     // a directory target (`cp x ~/.config/opencode/agents/`, `rm -rf …/plugins`) is judged by what it would hold
-    if (isOwn(a) || isOwn(a.replace(/\/+$/, "") + "/x")) return res("own-config", "write-own-config", { detail: w.p })
-    if (DESTRUCTIVE_TOOLS.has(base) && (base !== "mv" || mvSources.includes(w.p)) && containsProtected(a, ownPatterns, home)) {
+    for (const t of new Set([a, lexical(expanded)])) {
+      if (isOwn(t) || isOwn(t.replace(/\/+$/, "") + "/x")) return res("own-config", "write-own-config", { detail: w.p })
+    }
+    const removes = gitMove ? !w.dir && (verbForGit === "rm" || mvSources.includes(w.p)) : DESTRUCTIVE_TOOLS.has(base) && (base !== "mv" || mvSources.includes(w.p))
+    if (removes && containsProtected(a, ownPatterns, home)) {
       return res("own-config", "remove-own-config-parent", { detail: w.p })
     }
   }
@@ -920,9 +1161,13 @@ export function classify(inv, target, cfg, ctx = {}) {
   const sa = cfg.secretAsk ?? {}
   const norm = normalizeOutputFlag(base, v)
   const askTexts = [argText, verbText(base, v), norm].filter(Boolean)
-  if (askTexts.some((t) => matchAny(t, sa.commands))) {
+  // kubectl: the `kubectl * get *secret*-o *` wildcard matched substrings (`secretspecs`, `test-secretspec`);
+  // it is replaced by a structural check on the resource word and the -o value
+  const askCommands = base === "kubectl" ? (sa.commands ?? []).filter((p) => !/^kubectl\b.*secret/i.test(p)) : sa.commands
+  if (askTexts.some((t) => matchAny(t, askCommands))) {
     if (!withPipe(askTexts).some((t) => matchAny(t, sa.commandAllow))) return res("secret-ask", "secret-command", { detail: argText })
   }
+  if (base === "kubectl" && kubectlSecretDump(base, args)) return res("secret-ask", "secret-command", { detail: argText })
   const askClass = (w) => pc(w) === "secret-ask"
   const askAnchored = (sa.paths ?? []).filter((p) => !p.startsWith("**"))
   for (const c of candidates) {
@@ -938,7 +1183,7 @@ export function classify(inv, target, cfg, ctx = {}) {
     } else {
       hit = askClass(c.w)
       // `cp -r ~/.kube /tmp/k`, `grep -r token ~/.aws`, `tar czf x ~/.aws`: whole trees are read (names alone — `ls` — are not)
-      if (!hit && recursive && c.w !== destWord && containsProtected(abs(c.w), askAnchored, home)) hit = true
+      if (!hit && recursive && c.w !== destWord && containsReadable(abs(c.w), askAnchored, home)) hit = true
       // `ls secrets/`, `grep -r x ./secrets` — the directory itself holds secrets
       if (!hit && (c.w.endsWith("/") || (recursive && /[/~]/.test(c.w)))) hit = askClass(abs(c.w).replace(/\/+$/, "") + "/x")
     }
@@ -958,12 +1203,12 @@ export function classify(inv, target, cfg, ctx = {}) {
   if ((inv?.wrapped ?? []).some((w) => w === "xargs" || w === "eval") && (knownExt || tool.includes("/"))) {
     return res("opaque", "xargs-eval", { detail: argText })
   }
-  const codeFlag = SHELLS.has(base) ? /^-[A-Za-z]*c$/ : /^-[A-Za-z]*[cem]$/ // `-c CODE`: inline code, not a script file
-  if ((SHELLS.has(base) || INTERPRETERS.test(base)) && !args.some((a) => codeFlag.test(a))) {
-    const script = positionals(args)[0]
-    if (script !== undefined && inTmp(script)) return res("opaque", "tmp-script", { detail: script })
+  // `-c CODE`: inline code, not a script file; `-` / heredoc: stdin is data; `bun install`: a sub-command
+  if ((SHELLS.has(base) || INTERPRETERS.test(base)) && !args.some((a) => isCodeFlag(base, a))) {
+    const script = scriptOperand(base, args)
+    if (script !== undefined && inTmp(withVars(script))) return res("opaque", "tmp-script", { detail: script })
   }
-  if ((base === "source" || base === ".") && args[0] !== undefined && inTmp(args[0])) {
+  if ((base === "source" || base === ".") && args[0] !== undefined && inTmp(withVars(args[0]))) {
     return res("opaque", "tmp-script", { detail: args[0] })
   }
   if (tool.includes("/") && inTmp(tool)) return res("opaque", "tmp-script", { detail: tool })
@@ -986,8 +1231,15 @@ export function classify(inv, target, cfg, ctx = {}) {
     return res("ext-write", "registry-push", { verb: "push" })
   }
 
+  // ---- 7b) kubeseal: sealing with a cert file / stdin is offline; only cluster flags reach the controller
+  if (base === "kubeseal") {
+    const names = args.filter((a) => a.startsWith("--")).map((a) => a.split("=")[0])
+    if (names.includes("--recovery-unseal")) return res("secret-ask", "kubeseal-recovery-unseal", { detail: argText })
+    if (names.some((n) => KUBESEAL_CLUSTER_FLAGS.has(n))) return res("ext-read", "kubeseal-cluster", { verb: "kubeseal" })
+  }
+
   // ---- 8) unknown CLI with an external target -----------------------------------------------
-  if (!NO_TARGET_TOOLS.has(base) && !tool.includes("/")) {
+  if (!NO_TARGET_TOOLS.has(base) && base !== "kubeseal" && !tool.includes("/")) {
     const ext = externalTarget(args, target)
     if (ext) {
       const first = positionals(withoutTargetFlags(args))[0]

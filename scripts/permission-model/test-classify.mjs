@@ -1,5 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
+import fs from "node:fs"
+import os from "node:os"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 
@@ -577,6 +579,183 @@ const REAL = [
   ["kubectl config use-context p && kubectl apply -f x", "opaque"],
   ["cat > README.md <<EOF\nhi\nEOF", "local-write"],
   ["kubectl get secret s -o yaml", "secret-ask"],
+
+  // =============================== fix batch after T8 (corpus replay) ===============================
+  // --- #1 stdin scripts (`-`) are data, not a tmp script; #14 more interpreters; -c/-e/-p inline code
+  ["python3 - <<EOF\nprint(1)\nEOF", "local-read", { cwd: RTMP }],
+  ["node - <<EOF\nconsole.log(1)\nEOF", "local-read", { cwd: RTMP }],
+  ["python3 - arg1 <<EOF\nprint(1)\nEOF", "local-read", { cwd: RTMP }],
+  ["lua - <<EOF\nprint(1)\nEOF", "local-read", { cwd: RTMP }],
+  ["lua -e 'print(1)'", "local-read", { cwd: RTMP }],
+  ["node -p '1+1'", "local-read", { cwd: RTMP }],
+  ["php -r 'echo 1;'", "local-read", { cwd: RTMP }],
+  ["python3 -m pytest", "local-read", { cwd: RTMP }],
+  ["python3 x.py", "opaque", { cwd: RTMP }],
+  // --- #2 `bun install` / `npm install` are not scripts; an explicit script path still is
+  ["bun install", "local-read", { cwd: RTMP }],
+  ["bun add zod", "local-read", { cwd: RTMP }],
+  ["bun test", "local-read", { cwd: RTMP }],
+  ["bun dev", "local-read", { cwd: RTMP }],
+  ["npm install", "local-write", { cwd: RTMP }],
+  ["bun eval.mjs", "opaque", { cwd: RTMP }],
+  ["bun run x.ts", "opaque", { cwd: RTMP }],
+  ["bun $TMPDIR/x.ts", "opaque"],
+  ["deno run $TMPDIR/a.ts", "opaque"],
+  ["deno task start", "local-read", { cwd: RTMP }],
+  // --- #14 lua / luajit / perl / ruby / php / python run a script from tmp ⇒ opaque
+  ["lua $TMPDIR/x.lua", "opaque"],
+  ["luajit x.lua", "opaque", { cwd: RTMP }],
+  ["lua5.4 x.lua", "opaque", { cwd: RTMP }],
+  ["perl $TMPDIR/x.pl", "opaque"],
+  ["ruby x.rb", "opaque", { cwd: RTMP }],
+  ["php $TMPDIR/a.php", "opaque"],
+  ["python $TMPDIR/a.py", "opaque"],
+  ["lua x.lua", "local-read"],
+  // --- #13 a script reached through a variable assigned earlier in the SAME command
+  ["D=$TMPDIR/x; bash $D/y.sh", "opaque"],
+  ["D=$TMPDIR; E=$D/s; bash $E/y.sh", "opaque"],
+  ["D=${TMPDIR}/x\nbash ${D}/y.sh", "opaque"],
+  ["D=$TMPDIR/x; source $D/e.sh", "opaque"],
+  ["D=$TMPDIR/x; . $D/e.sh", "opaque"],
+  ["D=$TMPDIR/x; lua $D/y.lua", "opaque"],
+  ["D=$TMPDIR/x; cat > $D/a.sh <<EOF\nhi\nEOF\nbash $D/a.sh", "opaque"],
+  ["D=$TMPDIR/x; python3 $D/a.py", "opaque"],
+  ["F=$TMPDIR/spike_$$.sh; cat > $F <<'EOF'\nhi\nEOF\nbash $F 2>&1", "opaque"],
+  ["D=/work; bash $D/y.sh", "local-write"],
+  ["D=$TMPDIR/x; D=$(date); bash $D/y.sh", "local-write"],
+  ["(D=$TMPDIR/x); bash $D/y.sh", "local-write"],
+  // --- #3 kubectl secret dump is structural: the RESOURCE is secret(s), not a name containing it
+  ["kubectl get secretspecs -o json", "ext-read"],
+  ["kubectl get secretspec -o yaml -n test-secretspec", "ext-read"],
+  ["kubectl get crd secretspecs.secretspec.jabbas.eu -o json", "ext-read"],
+  ["kubectl get pods -n secretspec-system -o yaml", "ext-read"],
+  ["kubectl get deploy secret -o yaml", "ext-read"],
+  ["kubectl get secrets -o wide", "ext-read"],
+  ["kubectl get secrets", "ext-read"],
+  ["kubectl get secret s -o name", "ext-read"],
+  ["kubectl get secret/s -o name", "ext-read"],
+  ["kubectl get secret/foo -o yaml", "secret-ask"],
+  ["kubectl get Secrets -o json", "secret-ask"],
+  ["kubectl get secrets,cm -o yaml", "secret-ask"],
+  ["kubectl get secrets.v1 -A -ojson", "secret-ask"],
+  ["kubectl -n x get --output=jsonpath={.data} secret s", "secret-ask"],
+  ["kubectl get secret s --output yaml", "secret-ask"],
+  ["kubectl -v 6 get secret s -o yaml", "secret-ask"],
+  // --- #4 jq / yq filters (`.token`, `.key`) are programs, not files
+  ["jq -r '.token'", "local-read"],
+  ["jq -r .token", "local-read"],
+  ["jq -r .key data.json", "local-read"],
+  ["jq --arg k v '.token' data.json", "local-read"],
+  ["jq -r '.manifests[].platform|select(.architecture!=null)'", "local-read"],
+  ["yq '.key' f.yaml", "local-read"],
+  ["yq eval '.token' f.yaml", "local-read"],
+  ["yq e '.key' f.yaml", "local-read"],
+  ["yq -N '[.kind, .metadata.name] | join(\" \")' x.yaml", "local-read"],
+  ["kubectl get cm x -o json | jq -r '.data.token'", "ext-read"],
+  ["cat .token", "secret-ask"],
+  ["jq . .token", "secret-ask"],
+  ["jq -r .x secrets/a.json", "secret-ask"],
+  ["yq '.x' creds.key", "secret-ask"],
+  ["jq -f prog.jq ~/.ssh/id_rsa", "secret-deny"],
+  // --- #12 the first operand of grep / rg / sed / awk / find -name is a PATTERN, not a path
+  ['grep -rn "~" file.txt', "local-read"],
+  ["grep -rn '~/.ssh/id_rsa' docs", "local-read"],
+  ["rg '~' README.md", "local-read"],
+  ["rg -n '*.pem' src", "local-read"],
+  ["egrep -c '~|\\.token' f", "local-read"],
+  ["sed -n '/~\\/.ssh/p' f", "local-read"],
+  ["sed 's/~/home/' f", "local-read"],
+  ["awk '/~\\/.ssh\\/id_/' f", "local-read"],
+  ["awk -F : '{print $1}' f", "local-read"],
+  ["find . -name '*.pem'", "local-read"],
+  ["find . -name '.env' -o -iname '*.key'", "local-read"],
+  ["grep -e '~' f", "local-read"],
+  ["grep -rne foo ~/notes", "local-read"],
+  ["grep x ~/.ssh/id_rsa", "secret-deny"],
+  ["grep -e x ~/.ssh/id_rsa", "secret-deny"],
+  ["grep -f ~/.ssh/id_rsa f", "secret-deny"],
+  ["grep -r . ~/.ssh", "secret-deny"],
+  ["sed 's/a/b/' ~/.ssh/id_rsa", "secret-deny"],
+  ["awk '{print}' ~/.ssh/id_rsa", "secret-deny"],
+  ["grep x .env", "secret-ask"],
+  ["rg --files ~/.ssh", "secret-deny"],
+  ["sed -n p secrets/a", "secret-ask"],
+  // --- #11 tar -C is a chdir; ~/.local/share is not a secret directory (only auth.json is)
+  ["tar czf x.tgz -C ~/.local/share mnemosyne", "local-write"],
+  ["tar czf ~/mnemosyne-backup.tgz -C ~/.local/share mnemosyne", "local-write"],
+  ["tar czf x.tgz --directory ~/.local/share mnemosyne", "local-write"],
+  ["tar czf x.tgz ~/.local/share/mnemosyne", "local-write"],
+  ["tar czf x.tgz ~/.local/share", "local-write"],
+  ["cp -r ~/.local/share/mnemosyne /tmp/m", "local-write"],
+  ["tar czf x.tgz ~/.local/share/opencode", "secret-deny"],
+  ["tar czf x.tgz -C ~/.local/share opencode", "secret-deny"],
+  ["tar czf x.tgz -C ~/.ssh .", "secret-deny"],
+  ["tar czf x.tgz -C ~ .ssh", "secret-deny"],
+  ["tar czf x.tgz -C ~/.aws .", "secret-ask"],
+  ["tar czf x.tgz -C ~/.config gcloud/", "secret-ask"],
+  ["tar czf x.tgz -C ~/.config other", "local-write"],
+  ["cp -r ~/.local/share/opencode /tmp/o", "secret-deny"],
+  ["cat ~/.local/share/opencode/auth.json", "secret-deny"],
+  ["ls ~/.local/share", "local-read"],
+  // --- #8 gh api -X GET with -f/-F fields is a read (query parameters)
+  ["gh api repos/jabbas/homebudget/hooks/1/deliveries -X GET -f per_page=5", "ext-read"],
+  ["gh api -X GET repos/a/b -F per_page=5 -f q=x", "ext-read"],
+  ["gh api --method GET repos/a/b -f per_page=5", "ext-read"],
+  ["gh api repos/a/b -f a=b", "ext-write"],
+  ["gh api repos/a/b -X POST -f a=b", "ext-write"],
+  ["gh api repos/a/b -X GET --input body.json", "ext-write"],
+  ["gh api graphql -X GET -f query=x", "ext-write"],
+  ["gh api repos/a/b -X GET -f a=b -X DELETE", "ext-write"],
+  // --- #9 kubeseal: offline sealing is local; only cluster flags reach the controller
+  ["kubeseal --format yaml", "local-read"],
+  ["kubeseal --cert pub.crt --format yaml < s.yaml > out.yaml", "local-write"],
+  ["kubectl create secret generic s --from-literal=a=b --dry-run=client -o yaml | kubeseal --format yaml > $TMPDIR/s.yaml", "ext-read"],
+  ["kubeseal --format yaml > $TMPDIR/s.yaml", "local-write"],
+  ["kubeseal --controller-name sc --controller-namespace kube-system --format yaml", "ext-read"],
+  ["kubeseal --context admin@k8s --format yaml", "ext-read"],
+  ["kubeseal --fetch-cert", "ext-read"],
+  ["kubeseal --recovery-unseal --recovery-private-key k", "secret-ask"],
+  // --- #10 `$VAR` inside [[ ]] / [ ] / test is not a command word
+  ["bash -c '[[ \"$TAG\" =~ ^v([0-9]+)$ ]] && echo ok'", "local-read"],
+  ["bash -c 'for T in v1; do if [[ \"$T\" =~ ^v([0-9]+)(-rc\\.[0-9]+)?$ ]]; then echo ok; fi; done'", "local-read"],
+  ["[ \"$X\" = y ] && echo ok", "local-read"],
+  ["test -n \"$X\" && echo ok", "local-read"],
+  ["[[ $a == (x|y) ]] && echo ok", "local-read"],
+  ["$X get pods", "opaque"],
+  // --- #15 ln / git mv / git rm into own-config
+  ["ln -s ../x/y.js plugins/m.js", "own-config", { cwd: CFGDIR }],
+  ["ln -sf /x/y.js ~/.config/opencode/plugins/m.js", "own-config"],
+  ["git mv agents/default.md agents/general.md", "own-config", { cwd: CFGDIR }],
+  ["git mv x.md agents/x.md", "own-config", { cwd: CFGDIR }],
+  ["git mv agents old-agents", "own-config", { cwd: CFGDIR }],
+  ["git rm agents/a.md", "own-config", { cwd: CFGDIR }],
+  ["git -C ~/.config/opencode mv agents/a.md agents/b.md", "own-config"],
+  ["git mv a.md b.md", "local-write"],
+  ["git mv docs/a.md docs/b.md", "local-write", { cwd: CFGDIR }],
+  ["ln -s a b", "local-write"],
+  // --- gate 1, decision 4: local-file verbs of talosctl / gh are reads (ext-read ⇒ allow); `gen secrets`, `wrangler deploy --dry-run` keep asking
+  ["talosctl gen config c https://x -o $TMPDIR/t", "ext-read"],
+  ["talosctl gen config c https://x --with-secrets $TMPDIR/s.yaml -o $TMPDIR/t", "ext-read"],
+  ["talosctl -n 10.1.250.11 gen config c https://x", "ext-read"],
+  ["talosctl --talosconfig t gen config c https://x -o $TMPDIR/t", "ext-read"],
+  ["talosctl machineconfig patch mc.yaml --patch @p.yaml -o $TMPDIR/mc.yaml", "ext-read"],
+  ["talosctl validate -c mc.yaml -m metal", "ext-read"],
+  ["talosctl image default", "ext-read"],
+  ["talosctl image list", "ext-read"],
+  ["talosctl gen secrets -o $TMPDIR/s.yaml", "ext-write"],
+  ["talosctl gen -o x secrets", "ext-write"],
+  ["talosctl image pull x", "ext-write"],
+  ["talosctl patch mc --patch @p.yaml", "irreversible"],
+  ["talosctl apply-config -f mc.yaml", "irreversible"],
+  ["gh release download v1 -R a/b -p '*.tgz' -D $TMPDIR/x", "ext-read"],
+  ["gh -R a/b release download v1", "ext-read"],
+  ["gh release view v1 --json assets", "ext-read"],
+  ["gh run download 123 -n art -D $TMPDIR/x", "ext-read"],
+  ["gh run view 123 --log", "ext-read"],
+  ["gh release create v1 --notes x", "ext-write"],
+  ["gh release upload v1 f.tgz", "ext-write"],
+  ["gh release delete v1", "irreversible"],
+  ["wrangler deploy --dry-run", "ext-write"],
 ]
 
 for (const [cmd, expected, opts] of REAL) {
@@ -600,6 +779,76 @@ test("real pipeline: reasons", () => {
   assert.equal(runReal("kubectl delete pod x --namespace=$NS").reason, "unresolved-target")
   assert.equal(runReal("python3 $TMPDIR/x.py").reason, "tmp-script")
   assert.equal(runReal("rm -rf ~/.config/opencode").reason, "remove-own-config-parent")
+})
+
+// ---- fix batch after T8: target carried from `export` in the same command (#7, #17) ---------------------------
+const { decideShell } = await load("decide.js")
+const decideReal = (cmd) =>
+  decideShell(cmd, { cfg, cwd: PROJ, sessionDir: PROJ, home: HOME, tmpRoots: [RTMP], env: { TMPDIR: RTMP, USER: "test" }, readFile })
+
+test("real decision: `export KUBECONFIG=<tmp>; helm uninstall` targets the tmp (dev) cluster (#7)", () => {
+  assert.equal(decideReal("export KUBECONFIG=$TMPDIR/e2e/k.kubeconfig; helm uninstall y").effect, "allow")
+  assert.equal(decideReal("export KUBECONFIG=$TMPDIR/e2e/k.kubeconfig && kubectl delete crd secretspecs.x && unset KUBECONFIG").effect, "allow")
+  assert.equal(decideReal("KUBECONFIG=$TMPDIR/k; helm uninstall y").effect, "allow")
+  assert.equal(decideReal("cd $TMPDIR && export KUBECONFIG=$TMPDIR/k && kubectl delete ns x").effect, "allow")
+  // …but only for the tmp kubeconfig, and only as long as it stays exported
+  assert.equal(decideReal("helm uninstall y").effect, "ask")
+  assert.equal(decideReal("export KUBECONFIG=/etc/k; helm uninstall y").effect, "ask")
+  assert.equal(decideReal("export KUBECONFIG=$FOO; helm uninstall y").effect, "ask")
+  assert.equal(decideReal("export KUBECONFIG=$TMPDIR/k; unset KUBECONFIG; helm uninstall y").effect, "ask")
+  assert.equal(decideReal("export KUBECONFIG=$TMPDIR/k; kubectl config use-context admin@k8s; helm uninstall y").effect, "ask")
+  assert.equal(decideReal("(export KUBECONFIG=$TMPDIR/k); helm uninstall y").effect, "ask")
+})
+
+test("real decision: a literal `export AWS_PROFILE=…` is a resolvable target; a dynamic one is not (#17)", () => {
+  assert.equal(decideReal("export AWS_PROFILE=x-dev; aws ec2 run-instances").effect, "allow")
+  assert.equal(decideReal("export AWS_PROFILE=prod && aws ec2 run-instances").effect, "ask")
+  assert.equal(decideReal("export AWS_PROFILE=$P && aws ec2 run-instances").effect, "ask")
+  assert.equal(decideReal("export AWS_PROFILE=prod && aws ec2 describe-instances").effect, "allow")
+  assert.equal(decideReal("export AWS_PROFILE=prod && aws s3 rm s3://b --recursive").effect, "ask")
+  assert.equal(decideReal("AWS_PROFILE=x-dev; aws s3 cp ./x s3://b/k").effect, "allow")
+})
+
+test("real decision: gate-1 decisions 2+3 — home writes (create/cp/port-forward, helm repo add/update) allowed; brew tap, pip install, rsync ask", () => {
+  // decyzja użytkownika 2026-10-24 (bramka 1, pkt 2): home (admin@k8s) allows these
+  for (const c of ["kubectl create ns x", "kubectl create -f x.yaml", "kubectl cp p:/a ./a", "kubectl cp ./a p:/a -n x", "kubectl port-forward svc/x 8080:80", "helm repo add x https://x", "helm repo update"]) {
+    assert.equal(decideReal(c).effect, "allow", c)
+  }
+  // …but only on home: an unknown / prod context still asks
+  for (const c of ["kubectl create ns x --context prod-a", "kubectl cp p:/a ./a --context foo", "kubectl --context prod-a port-forward svc/x 80:80"]) {
+    assert.equal(decideReal(c).effect, c.includes("port-forward") ? "allow" : "ask", c)
+  }
+  // (3) local asks stay as implemented; `brew info` and friends are reads
+  for (const c of ["brew install x", "brew uninstall x", "brew upgrade", "brew tap foo/bar", "brew untap foo/bar", "brew services start x", "pip install x", "rsync -a a/ b/"]) {
+    assert.equal(decideReal(c).effect, "ask", c)
+  }
+  for (const c of ["brew info x", "brew list", "brew search x", "brew --prefix"]) assert.equal(decideReal(c).effect, "allow", c)
+})
+
+test("real decision: python3 - <<EOF in a tmp working dir is allowed; a tmp script file still asks (#1)", () => {
+  const at = (cmd, cwd) => decideShell(cmd, { cfg, cwd, sessionDir: cwd, home: HOME, tmpRoots: [RTMP], env: { TMPDIR: RTMP }, readFile })
+  assert.equal(at("python3 - <<EOF\nprint(1)\nEOF", RTMP).effect, "allow")
+  assert.equal(at("bun install", RTMP).effect, "allow")
+  assert.equal(at("bun eval.mjs", RTMP).effect, "ask")
+  assert.equal(at("D=$TMPDIR/x; bash $D/y.sh", PROJ).effect, "ask")
+})
+
+test("own-config: ln / rm replace the symlink itself, not what it points to (#15)", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "pm-ln-"))
+  try {
+    fs.mkdirSync(path.join(dir, ".opencode"))
+    fs.mkdirSync(path.join(dir, "elsewhere"))
+    fs.writeFileSync(path.join(dir, "elsewhere", "x.js"), "")
+    fs.symlinkSync(path.join(dir, "elsewhere", "x.js"), path.join(dir, ".opencode", "m.js"))
+    const ctx = { home: HOME, tmpRoots: [], sessionDir: dir, pathClass }
+    const one = (tool, args) => classify({ tool, args, cwd: dir, env: {}, redirects: [], wrapped: [], unresolved: false }, NONE, cfg, ctx).cls
+    assert.equal(one("ln", ["-sf", "../elsewhere/x.js", ".opencode/m.js"]), "own-config")
+    assert.equal(one("rm", [".opencode/m.js"]), "own-config")
+    assert.equal(one("git", ["mv", ".opencode/m.js", "elsewhere/y.js"]), "own-config")
+    assert.equal(one("ln", ["-s", "a", "elsewhere/z.js"]), "local-write")
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true })
+  }
 })
 
 test("verbCandidates survives unknown value-taking flags", () => {

@@ -51,6 +51,19 @@ tool / agent / day / tool×agent / day×tool, redaction counts, top-100 command-
   shell keywords, ignore heredoc bodies), meant for orientation, not as parser ground truth.
 - **Regenerate:** the build script is `$TMPDIR/opencode/pm-corpus/build.py` (ephemeral).
 
+## `expected-decisions.json` / `known-divergences.json` (generated locally, gitignored)
+
+**Not committed:** they contain real commands from the corpus. Generate them locally with
+`node scripts/permission-model/build-expected.mjs` (needs `audit-commands.json`; seed `20261023`; also writes
+`docs/permission-model-expected-decisions.md`, gitignored too). On a fresh clone they are absent and
+`test-replay.mjs` skips the tests that need them (`test.skip`); the rest of the suite is unaffected.
+`expected-decisions.json` = ~980 rows `{ id, tool, command|path, agent, cwd, expected, why, group, note? }`:
+all 64 `session-commands.json` entries (`session`), every corpus entry the plugin would ask/deny (`non-allow`, ~830)
+and a seeded random 80 of the allowed rest (`sample`). Labels come from `label.mjs` (an independent reading of spec §3–§4,
+not the plugin's output). `known-divergences.json` lists corpus entries where plugin ≠ label (triaged; see
+`docs/permission-model-expected-decisions.md` §3); `PM_STRICT=1 node --test scripts/permission-model/test-replay.mjs` ignores the tolerance.
+CLI: `node scripts/permission-model/replay.mjs [--out FILE] [--top N]` (writes `$TMPDIR/opencode/pm-replay.json`).
+
 ## `audit-*.json` (to be added)
 
 Copy from `$TMPDIR/opencode/permaudit/` (`evaluated.json` → `audit-evaluated.json`, `remaining.json` →

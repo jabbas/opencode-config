@@ -16,6 +16,9 @@ import { parseCommand } from "./parse.js"
 //                 or the command went through xargs / eval
 //   wrapped       outermost → innermost: "timeout"|"env"|"time"|"nice"|"nohup"|"xargs"|"shell-c"|"eval"
 //   contextSwitch an EARLIER simple of the same command switched kube context / AWS profile
+//                 (`use-context`, `asp`, or a DYNAMIC `export KUBECONFIG=$X` — a literal
+//                 `export KUBECONFIG=…`/`AWS_PROFILE=…` is instead carried into later `env`)
+//   vars          literal `NAME=value` assignments made earlier in the same command (only when any)
 // Assignment-only simples (`FOO=1`) are not emitted unless they have redirects (then tool "").
 // `for`/`case`/`while` header pseudo-commands and function definitions are skipped.
 
@@ -188,10 +191,42 @@ function switchesContext(tool, args) {
     const ci = args.indexOf("config")
     return ci >= 0 && args.slice(ci + 1).some((a) => a === "use-context" || a === "set-context" || a === "set-cluster")
   }
-  if (name === "export" || name === "declare" || name === "typeset") {
-    return args.some((a) => /^(AWS_PROFILE|KUBECONFIG)=/.test(a))
-  }
   return false
+}
+
+// Target-selecting variables: a LITERAL value assigned earlier in the same command is carried into the
+// later invocations as `inv.env` (so target resolution sees it); a dynamic value is a context switch.
+const TARGET_VARS = new Set(["AWS_PROFILE", "KUBECONFIG"])
+const DECLARE_LIKE = new Set(["export", "declare", "typeset", "local", "readonly"])
+const USER_VAR_RE = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g
+
+/** Replace `$NAME` / `${NAME}` by the literal values recorded earlier in this command (unknown names stay). */
+function expandUser(text, vars) {
+  if (!vars || typeof text !== "string" || !text.includes("$")) return text
+  return text.replace(USER_VAR_RE, (m, a, b) => {
+    const v = vars[a ?? b]
+    return v === undefined ? m : v
+  })
+}
+
+/**
+ * Record `NAME=value` made by an assignment-only simple or by `export`/`declare`/… — vars for literal
+ * values, `exports` (target variables) and the context switch for dynamic target values.
+ */
+function noteAssign(st, state, name, rawValue, dynamic, ctx) {
+  // `$$` (the shell's pid, e.g. `spike_$$.sh`) only varies the file name: a stand-in digit keeps the path usable
+  const e = expandVars(dynamic === false ? rawValue : expandUser(rawValue, st.vars), { ...ctx, cwd: st.cwd }).replace(/\$\$/g, "0")
+  const literal = !hasUnresolved(e, dynamic === false ? false : undefined)
+  if (literal) st.vars[name] = e
+  else delete st.vars[name]
+  if (!TARGET_VARS.has(name)) return
+  if (literal) {
+    st.exports[name] = e
+  } else {
+    delete st.exports[name]
+    st.contextSwitch = true
+    state.contextSwitch = true
+  }
 }
 
 /** Next cwd after `cd`/`pushd`/`popd`; null = unknown. */
@@ -226,7 +261,7 @@ function run(simples, state, ctx, base, out, depth) {
     const s = simples[i]
     let st = state
     if (s.nested) {
-      if (!scope) scope = { ...state }
+      if (!scope) scope = { ...state, vars: { ...state.vars }, exports: { ...state.exports } }
       st = scope
     } else {
       scope = null
@@ -247,14 +282,12 @@ function run(simples, state, ctx, base, out, depth) {
       state.contextSwitch = true
     }
     const inherited = wrapMap.get(i) ?? base
-    const env = { ...inherited.env }
-    for (const a of s.assigns ?? []) env[a.name] = expandVars(a.value, ctx)
+    const env = { ...inherited.env, ...st.exports }
+    for (const a of s.assigns ?? []) env[a.name] = expandVars(a.dynamic ? expandUser(a.value, st.vars) : a.value, ctx)
 
     if (words.length === 0) {
       // assignment-only (or redirect-only) simple
-      if ((s.assigns ?? []).some((a) => a.name === "AWS_PROFILE" || a.name === "KUBECONFIG")) {
-        setSwitch()
-      }
+      for (const a of s.assigns ?? []) noteAssign(st, state, a.name, a.value, !!a.dynamic, ctx)
       if ((s.redirects ?? []).length > 0) out.push(makeInv(s, "", [], env, st.cwd, false, [...inherited.wrapped], st.contextSwitch))
       continue
     }
@@ -286,7 +319,8 @@ function run(simples, state, ctx, base, out, depth) {
           continue
         }
         if (sc.script !== undefined && sc.script.trim() !== "" && depth < MAX_DEPTH) {
-          const inner = { ...st, cwd: invCwd }
+          // only exported variables reach the child shell; its own assignments do not leak back
+          const inner = { ...st, cwd: invCwd, vars: {}, exports: { ...st.exports } }
           run(parseCommand(sc.script), inner, ctx, { wrapped: [...fullWrapped, "shell-c"], env }, out, depth + 1)
           if (inner.contextSwitch) setSwitch()
           if ((s.redirects ?? []).length > 0 || s.heredoc) out.push(makeInv(s, tool, args, env, invCwd, hasUnresolved(sc.script, scriptDyn), [...fullWrapped, "shell-c"], st.contextSwitch))
@@ -300,10 +334,14 @@ function run(simples, state, ctx, base, out, depth) {
 
     const expTool = expandVars(tool, ctx)
     let unresolved = stripped.unresolved || /^[$`]/.test(expTool) || hasUnresolved(expTool, dyn[words.length - stripped.words.length])
-    for (let k = 0; k < Math.min(3, args.length) && !unresolved; k++) {
+    // `$VAR` inside `[[ … ]]` / `[ … ]` / `test` is a comparison operand, not a command word
+    const conditional = expTool === "[[" || expTool === "[" || expTool === "test"
+    for (let k = 0; k < Math.min(3, args.length) && !unresolved && !conditional; k++) {
       if (hasUnresolved(args[k], adyn[k])) unresolved = true
     }
     const inv = makeInv(s, expTool, args, env, invCwd, unresolved, fullWrapped, st.contextSwitch)
+    // literal variables assigned earlier in the same command (the classifier resolves script paths with them)
+    if (Object.keys(st.vars).length > 0) inv.vars = { ...st.vars }
     // `env | grep ^X`: the classifier needs to know what this command is piped into
     for (let k = i + 1; k < simples.length; k++) {
       if ((simples[k].nested ?? null) !== (s.nested ?? null)) continue // commands nested deeper (`$( )`) come in between
@@ -314,7 +352,17 @@ function run(simples, state, ctx, base, out, depth) {
 
     const name = cmdName(expTool)
     if (name === "cd" || name === "pushd" || name === "popd") st.cwd = cdTarget(expTool, args, st, ctx)
-    if (switchesContext(expTool, args)) setSwitch()
+    if (DECLARE_LIKE.has(name)) {
+      for (let k = 0; k < args.length; k++) {
+        const m = ASSIGN_RE.exec(args[k])
+        if (m) noteAssign(st, state, m[1], m[2], adyn[k] !== false, ctx)
+      }
+    } else if (name === "unset") {
+      for (const a of args) {
+        delete st.vars[a]
+        delete st.exports[a]
+      }
+    } else if (switchesContext(expTool, args)) setSwitch()
   }
 }
 
@@ -349,7 +397,7 @@ function makeInv(s, tool, args, env, cwd, unresolved, wrapped, contextSwitch) {
 export function unwrap(simples, { cwd = null, home, tmpRoots = [], env = {} } = {}) {
   const tmpDir = stripSlash(env.TMPDIR ?? tmpRoots[0])
   const ctx = { home: stripSlash(home), tmpDir, user: env.USER }
-  const state = { cwd: cwd === undefined ? null : cwd, contextSwitch: false }
+  const state = { cwd: cwd === undefined ? null : cwd, contextSwitch: false, vars: {}, exports: {} }
   const out = []
   run(simples, state, ctx, { wrapped: [], env: {} }, out, 0)
   return out

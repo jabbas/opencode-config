@@ -35,3 +35,7 @@ service.json
 permission-model.local.json
 # large audit corpus (5 MB); rebuild per scripts/permission-model/fixtures/README.md
 scripts/permission-model/fixtures/audit-commands.json
+# real-command tables, generated locally by scripts/permission-model/build-expected.mjs (they contain real commands)
+scripts/permission-model/fixtures/expected-decisions.json
+scripts/permission-model/fixtures/known-divergences.json
+docs/permission-model-expected-decisions.md

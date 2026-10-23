@@ -297,7 +297,9 @@ function parseSimples(src, depth) {
       cur.words.push(w);
     }
   };
+  let bracketParens = 0; // nesting of ( ) inside the current `[[ … ]]`
   const endCommand = (end) => {
+    bracketParens = 0;
     flushWord();
     pendingRedirect = null;
     pendingHeredoc = null;
@@ -344,6 +346,11 @@ function parseSimples(src, depth) {
     let k = 0;
     while (k < cur.words.length && !cur.words[k].quoted && RESERVED.has(cur.words[k].text)) k++;
     return cur.words.slice(k);
+  };
+  // Is the command being read a `[[` conditional whose closing `]]` has not been seen yet?
+  const inDoubleBracket = () => {
+    const eff = effectiveWords();
+    return eff.length > 0 && eff[0].text === '[[' && !eff[0].quoted && !eff.some((w) => w.text === ']]') && !(word && word.text === ']]');
   };
   // Handle `$…` at index `at`; returns the next index.
   const readDollar = (at, inDouble) => {
@@ -441,6 +448,20 @@ function parseSimples(src, depth) {
       for (const h of heredocs) i = skipHeredocBody(src, i, h);
       heredocs = [];
       segStart = i;
+      continue;
+    }
+    // inside `[[ … ]]` parentheses are regex / grouping characters (`[[ $v =~ ^v([0-9]+)$ ]]`), not syntax,
+    // and `|` `&` `;` inside such a group are part of it (`[[ $a == (x|y) ]]`)
+    if (
+      (c === '(' || c === ')' || (bracketParens > 0 && (c === '|' || c === '&' || c === ';'))) &&
+      !(c === '(' && src[i - 1] === '$') && // `$(cmd)` is read by readDollar, never reaches here
+      inDoubleBracket()
+    ) {
+      word ??= newWord();
+      word.text += c;
+      if (c === '(') bracketParens++;
+      else if (c === ')') bracketParens = Math.max(0, bracketParens - 1);
+      i++;
       continue;
     }
     if (c === ';') { cut(i, i + 1); i++; continue; }

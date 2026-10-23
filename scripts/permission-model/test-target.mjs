@@ -187,8 +187,15 @@ test('contextSwitch → unknown for external targets', () => {
   const t = resolveTarget(invs[1], cfg, base);
   assert.equal(t.kind, 'k8s');
   assert.equal(t.cls, 'unknown');
-  const a = unwrap(parseCommand('export AWS_PROFILE=x-dev; aws s3 rm s3://b'), { cwd: '/w', home: HOME, tmpRoots: [TMP], env: {} });
+  // a DYNAMIC export is a switch; a literal one is a resolvable target (carried as inv.env)
+  const a = unwrap(parseCommand('export AWS_PROFILE=$P; aws s3 rm s3://b'), { cwd: '/w', home: HOME, tmpRoots: [TMP], env: {} });
   assert.equal(resolveTarget(a[1], cfg, base).cls, 'unknown');
+  const lit = unwrap(parseCommand('export AWS_PROFILE=x-dev; aws s3 rm s3://b'), { cwd: '/w', home: HOME, tmpRoots: [TMP], env: {} });
+  assert.deepEqual([resolveTarget(lit[1], cfg, base).cls, resolveTarget(lit[1], cfg, base).source], ['dev', 'command-env:AWS_PROFILE']);
+  const litProd = unwrap(parseCommand('export AWS_PROFILE=prod; aws s3 rm s3://b'), { cwd: '/w', home: HOME, tmpRoots: [TMP], env: {} });
+  assert.equal(resolveTarget(litProd[1], cfg, base).cls, 'unknown');
+  const kc = unwrap(parseCommand('export KUBECONFIG=$TMPDIR/e2e/k; helm uninstall y'), { cwd: '/w', home: HOME, tmpRoots: [TMP], env: { TMPDIR: TMP } });
+  assert.equal(resolveTarget(kc[1], cfg, base).cls, 'dev');
   const g = unwrap(parseCommand('asp x; git push'), { cwd: '/w', home: HOME, tmpRoots: [TMP], env: {} });
   assert.equal(resolveTarget(g[1], cfg, base).cls, 'unknown');
   const l = unwrap(parseCommand('asp x; cargo test'), { cwd: '/w', home: HOME, tmpRoots: [TMP], env: {} });

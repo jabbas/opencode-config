@@ -224,9 +224,10 @@ test('kubectl config use-context sets contextSwitch for later simples', () => {
 });
 
 test('other context switches', () => {
-  assert.equal(inv('export AWS_PROFILE=prod; aws s3 rm s3://b --recursive')[1].contextSwitch, true);
-  assert.equal(inv('AWS_PROFILE=prod; aws s3 rm s3://b')[0].contextSwitch, true);
-  assert.equal(inv('export KUBECONFIG=/x; kubectl get pods')[1].contextSwitch, true);
+  // a DYNAMIC value makes the target unknowable → context switch
+  assert.equal(inv('export AWS_PROFILE=$P; aws s3 rm s3://b --recursive')[1].contextSwitch, true);
+  assert.equal(inv('AWS_PROFILE=$P; aws s3 rm s3://b')[0].contextSwitch, true);
+  assert.equal(inv('export KUBECONFIG=$(mktemp); kubectl get pods').at(-1).contextSwitch, true);
   assert.equal(inv('asp prod && aws s3 ls')[1].contextSwitch, true);
   assert.equal(inv('kubectx foo && kubectl get pods')[1].contextSwitch, true);
   assert.equal(inv('kubens foo && kubectl get pods')[1].contextSwitch, true);
@@ -238,6 +239,46 @@ test('a scoped AWS_PROFILE=… cmd does not switch context', () => {
   const r = inv('AWS_PROFILE=dev aws s3 ls; aws s3 ls');
   assert.deepEqual(r.map((i) => i.contextSwitch), [false, false]);
   assert.deepEqual(inv('kubectl config view; kubectl get pods').map((i) => i.contextSwitch), [false, false]);
+});
+
+test('literal export / assignment of KUBECONFIG and AWS_PROFILE is carried into later invocations (#7, #17)', () => {
+  const r = inv('export KUBECONFIG=$TMPDIR/e2e/k && kubectl delete crd x && helm uninstall y');
+  assert.equal(r[1].env.KUBECONFIG, `${TMP}/e2e/k`);
+  assert.equal(r[2].env.KUBECONFIG, `${TMP}/e2e/k`);
+  assert.deepEqual(r.map((i) => i.contextSwitch), [false, false, false]);
+  const a = inv('export AWS_PROFILE=x-dev; aws ec2 describe-instances');
+  assert.equal(a[1].env.AWS_PROFILE, 'x-dev');
+  assert.equal(a[1].contextSwitch, false);
+  assert.equal(inv('KUBECONFIG=/tmp/k; kubectl get pods')[0].env.KUBECONFIG, '/tmp/k');
+  assert.equal(inv('declare -x AWS_PROFILE=p; aws s3 ls').at(-1).env.AWS_PROFILE, 'p');
+  // a one-shot `K=V cmd` does not leak; unset forgets; a subshell / sh -c does not leak out
+  assert.equal(inv('KUBECONFIG=/tmp/k kubectl get pods; kubectl get ns')[1].env.KUBECONFIG, undefined);
+  assert.equal(inv('export KUBECONFIG=/tmp/k; unset KUBECONFIG; kubectl get ns').at(-1).env.KUBECONFIG, undefined);
+  assert.equal(inv("bash -c 'export KUBECONFIG=/tmp/k'; kubectl get ns").at(-1).env.KUBECONFIG, undefined);
+  // exported variables DO reach a child shell
+  assert.equal(inv("export KUBECONFIG=/tmp/k; bash -c 'kubectl get ns'").at(-1).env.KUBECONFIG, '/tmp/k');
+  // a dynamic value forgets the earlier literal and switches context
+  const d = inv('export KUBECONFIG=/tmp/k; export KUBECONFIG=$X; kubectl get ns').at(-1);
+  assert.equal(d.env.KUBECONFIG, undefined);
+  assert.equal(d.contextSwitch, true);
+});
+
+test('literal variables assigned earlier in the same command are exposed as inv.vars (#13)', () => {
+  const r = inv('D=$TMPDIR/x; E=$D/sub; bash $E/y.sh');
+  assert.deepEqual(r.at(-1).vars, { D: `${TMP}/x`, E: `${TMP}/x/sub` });
+  assert.equal(inv('bash y.sh')[0].vars, undefined);
+  // a dynamic value is not recorded, and replaces an earlier literal
+  assert.equal(inv('D=/a; D=$(date); bash $D/y.sh').at(-1).vars, undefined);
+  // scoped to the command: a subshell does not leak
+  assert.equal(inv('(D=/a); bash $D/y.sh').at(-1).vars, undefined);
+});
+
+test('$VAR inside [[ ]] / [ ] / test is a comparison operand, not an unresolved command (#10)', () => {
+  assert.equal(inv('[[ "$TAG" =~ ^v([0-9]+)$ ]] && echo ok')[0].unresolved, false);
+  assert.deepEqual(inv('[[ "$TAG" =~ ^v([0-9]+)$ ]]').map((i) => i.tool), ['[[']);
+  assert.equal(inv('[ "$X" = y ]')[0].unresolved, false);
+  assert.equal(inv('test -n "$X"')[0].unresolved, false);
+  assert.equal(inv('echo "$X"')[0].unresolved, true);
 });
 
 test('switch inside sh -c propagates conservatively', () => {

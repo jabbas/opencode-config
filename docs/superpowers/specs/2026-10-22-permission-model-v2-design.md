@@ -90,9 +90,12 @@ Poniższe = **allow** na domowym klastrze `admin@k8s` i w repo użytkownika (odw
 | kubectl | `apply`, `exec`, `rollout`, `scale`, `patch`, `label`, `annotate` |
 | flux | `reconcile`, `suspend`, `resume` |
 | helm | `upgrade`, `install`, `rollback` |
+| kubectl | `create`, `cp`, `port-forward` — decyzja użytkownika 2026-10-24 (bramka 1, pkt 2) |
+| helm | `repo add`, `repo update` — decyzja użytkownika 2026-10-24 (bramka 1, pkt 2) |
 
 - Agent `debugger` ma te same prawa co `devops`/`coder`.
 - Operacje nieodwracalne na `admin@k8s` (np. `kubectl delete ns`, `helm uninstall`) nadal pytają — §4.3 i klasa `home` w §4.6.
+- Dalsze decyzje użytkownika z bramki 1 (2026-10-24): lista `home` = tylko `admin@k8s` (wzorce `dev`/`prod` bez zmian); lokalnie nadal pytają `brew install/uninstall/upgrade/tap/untap/services` (`brew info` itp. = odczyt), `pip install`, każdy `rsync`; czasowniki działające na plikach lokalnych są odczytem: `talosctl gen config|machineconfig patch|validate|image default|image list`, `gh release download`, `gh run download` (`talosctl gen secrets` i `wrangler deploy --dry-run` nadal pytają); literalny `export AWS_PROFILE=x && aws … describe` = cel możliwy do ustalenia (profil `x`), nie „nieznany” (zob. §4.1, A6); `env | grep WZORZEC` bez kotwicy `^` pyta.
 
 ## 4. Reguły
 

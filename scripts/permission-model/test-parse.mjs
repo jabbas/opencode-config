@@ -57,6 +57,13 @@ test('heredoc inside $( ) with unbalanced quotes', () => {
   assert.equal(r[1].heredoc, true);
 });
 
+test('parentheses inside [[ … ]] are regex characters, not syntax', () => {
+  assert.deepEqual(words('[[ "$TAG" =~ ^v([0-9]+)(-rc)?$ ]] && echo ok'), [['[[', '$TAG', '=~', '^v([0-9]+)(-rc)?$', ']]'], ['echo', 'ok']]);
+  assert.deepEqual(words('if [[ $a == (x|y) ]]; then echo hi; fi'), [['[[', '$a', '==', '(x|y)', ']]'], ['echo', 'hi']]);
+  // outside [[ ]] a subshell / function definition still parses as before
+  assert.deepEqual(words('[[ -n x ]] && (cd /tmp; ls)'), [['[[', '-n', 'x', ']]'], ['cd', '/tmp'], ['ls']]);
+});
+
 test('herestring', () => {
   const r = parseCommand('grep x <<< "a b"');
   assert.equal(r.length, 1);
