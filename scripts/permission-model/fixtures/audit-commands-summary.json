@@ -1,0 +1,633 @@
+{
+  "source": "opencode.db (read-only): session_v2 + session_message type='assistant' content[type='tool']",
+  "range": {
+    "from": "2026-10-04T00:16:29.648+02:00",
+    "to": "2026-10-23T00:21:37.327+02:00"
+  },
+  "total": 10016,
+  "dropped_read_edit_write_before_2026-10-15": 0,
+  "child_session_entries": 8624,
+  "status": {
+    "completed": 9902,
+    "error": 110,
+    "running": 3,
+    "streaming": 1
+  },
+  "byTool": {
+    "shell": 5908,
+    "read": 1507,
+    "edit": 2000,
+    "write": 601
+  },
+  "byAgent": {
+    "coder": 4030,
+    "general": 2895,
+    "devops": 1262,
+    "architect": 769,
+    "explore": 318,
+    "build": 269,
+    "writer": 239,
+    "debugger": 234
+  },
+  "byDay": {
+    "2026-10-04": 549,
+    "2026-10-05": 107,
+    "2026-10-06": 71,
+    "2026-10-08": 47,
+    "2026-10-09": 420,
+    "2026-10-10": 78,
+    "2026-10-11": 146,
+    "2026-10-12": 110,
+    "2026-10-13": 626,
+    "2026-10-14": 318,
+    "2026-10-15": 87,
+    "2026-10-16": 223,
+    "2026-10-17": 578,
+    "2026-10-18": 680,
+    "2026-10-19": 2054,
+    "2026-10-20": 2295,
+    "2026-10-21": 341,
+    "2026-10-22": 1057,
+    "2026-10-23": 229
+  },
+  "byToolAgent": {
+    "shell": {
+      "coder": 2117,
+      "general": 1924,
+      "devops": 1032,
+      "build": 258,
+      "debugger": 226,
+      "explore": 199,
+      "writer": 78,
+      "architect": 74
+    },
+    "read": {
+      "general": 600,
+      "coder": 368,
+      "architect": 306,
+      "explore": 119,
+      "devops": 75,
+      "writer": 29,
+      "debugger": 7,
+      "build": 3
+    },
+    "edit": {
+      "coder": 1271,
+      "architect": 340,
+      "general": 162,
+      "writer": 112,
+      "devops": 108,
+      "build": 7
+    },
+    "write": {
+      "coder": 274,
+      "general": 209,
+      "architect": 49,
+      "devops": 47,
+      "writer": 20,
+      "build": 1,
+      "debugger": 1
+    }
+  },
+  "byDayTool": {
+    "2026-10-04": {
+      "shell": 443,
+      "read": 67,
+      "edit": 26,
+      "write": 13
+    },
+    "2026-10-05": {
+      "shell": 78,
+      "read": 13,
+      "write": 4,
+      "edit": 12
+    },
+    "2026-10-06": {
+      "shell": 64,
+      "read": 1,
+      "edit": 5,
+      "write": 1
+    },
+    "2026-10-08": {
+      "shell": 44,
+      "edit": 2,
+      "read": 1
+    },
+    "2026-10-09": {
+      "shell": 259,
+      "write": 23,
+      "edit": 26,
+      "read": 112
+    },
+    "2026-10-10": {
+      "shell": 71,
+      "write": 2,
+      "edit": 4,
+      "read": 1
+    },
+    "2026-10-11": {
+      "shell": 47,
+      "read": 49,
+      "write": 13,
+      "edit": 37
+    },
+    "2026-10-12": {
+      "edit": 19,
+      "read": 22,
+      "shell": 55,
+      "write": 14
+    },
+    "2026-10-13": {
+      "write": 59,
+      "edit": 124,
+      "read": 198,
+      "shell": 245
+    },
+    "2026-10-14": {
+      "shell": 178,
+      "write": 26,
+      "read": 56,
+      "edit": 58
+    },
+    "2026-10-15": {
+      "shell": 79,
+      "read": 8
+    },
+    "2026-10-16": {
+      "shell": 192,
+      "read": 18,
+      "edit": 11,
+      "write": 2
+    },
+    "2026-10-17": {
+      "shell": 409,
+      "read": 107,
+      "write": 17,
+      "edit": 45
+    },
+    "2026-10-18": {
+      "shell": 459,
+      "read": 73,
+      "write": 37,
+      "edit": 111
+    },
+    "2026-10-19": {
+      "shell": 1056,
+      "write": 185,
+      "edit": 621,
+      "read": 192
+    },
+    "2026-10-20": {
+      "read": 354,
+      "shell": 1195,
+      "edit": 623,
+      "write": 123
+    },
+    "2026-10-21": {
+      "shell": 238,
+      "write": 23,
+      "edit": 56,
+      "read": 24
+    },
+    "2026-10-22": {
+      "shell": 665,
+      "edit": 177,
+      "read": 180,
+      "write": 35
+    },
+    "2026-10-23": {
+      "shell": 131,
+      "edit": 43,
+      "read": 31,
+      "write": 24
+    }
+  },
+  "redactions": {
+    "total": 2,
+    "commandsAffected": 1,
+    "byPattern": {
+      "PEM BEGIN": 2
+    }
+  },
+  "heredocBodiesTruncated": 27,
+  "distinctCommandWords": 4109,
+  "commandWordsTop100": [
+    [
+      "grep",
+      4116
+    ],
+    [
+      "cd",
+      3447
+    ],
+    [
+      "git",
+      3437
+    ],
+    [
+      "head",
+      3273
+    ],
+    [
+      "echo",
+      2169
+    ],
+    [
+      "tail",
+      1432
+    ],
+    [
+      "sed",
+      1387
+    ],
+    [
+      "cat",
+      1165
+    ],
+    [
+      "ls",
+      1029
+    ],
+    [
+      "kubectl",
+      806
+    ],
+    [
+      "cargo",
+      726
+    ],
+    [
+      "python3",
+      544
+    ],
+    [
+      "curl",
+      450
+    ],
+    [
+      "jq",
+      358
+    ],
+    [
+      "export",
+      353
+    ],
+    [
+      "bash",
+      339
+    ],
+    [
+      "cut",
+      300
+    ],
+    [
+      "wc",
+      228
+    ],
+    [
+      "opencode",
+      209
+    ],
+    [
+      "sort",
+      200
+    ],
+    [
+      "sleep",
+      197
+    ],
+    [
+      "awk",
+      194
+    ],
+    [
+      "busted",
+      193
+    ],
+    [
+      "uv",
+      185
+    ],
+    [
+      "bun",
+      157
+    ],
+    [
+      "rm",
+      146
+    ],
+    [
+      "gh",
+      142
+    ],
+    [
+      "date",
+      141
+    ],
+    [
+      "import",
+      141
+    ],
+    [
+      "npx",
+      138
+    ],
+    [
+      "helm",
+      128
+    ],
+    [
+      "podman",
+      127
+    ],
+    [
+      "/opt/homebrew/bin/hs",
+      121
+    ],
+    [
+      "yq",
+      117
+    ],
+    [
+      "npm",
+      113
+    ],
+    [
+      "mkdir",
+      112
+    ],
+    [
+      "printf",
+      112
+    ],
+    [
+      "sqlite3",
+      103
+    ],
+    [
+      "luacheck",
+      95
+    ],
+    [
+      "talosctl",
+      92
+    ],
+    [
+      "f",
+      89
+    ],
+    [
+      "mk",
+      89
+    ],
+    [
+      "cp",
+      85
+    ],
+    [
+      "ssh",
+      85
+    ],
+    [
+      "find",
+      83
+    ],
+    [
+      "pub",
+      83
+    ],
+    [
+      "diff",
+      81
+    ],
+    [
+      "which",
+      78
+    ],
+    [
+      "FAILED",
+      76
+    ],
+    [
+      "flux",
+      75
+    ],
+    [
+      "tr",
+      72
+    ],
+    [
+      "k",
+      72
+    ],
+    [
+      "kind",
+      72
+    ],
+    [
+      "node",
+      62
+    ],
+    [
+      "failed",
+      60
+    ],
+    [
+      "yarn",
+      58
+    ],
+    [
+      "mnemoteca",
+      56
+    ],
+    [
+      "i",
+      55
+    ],
+    [
+      "a",
+      55
+    ],
+    [
+      "dig",
+      54
+    ],
+    [
+      "timeout",
+      50
+    ],
+    [
+      "panicked",
+      50
+    ],
+    [
+      "[",
+      47
+    ],
+    [
+      "error",
+      46
+    ],
+    [
+      "uniq",
+      46
+    ],
+    [
+      "test",
+      45
+    ],
+    [
+      "shasum",
+      41
+    ],
+    [
+      "sh",
+      41
+    ],
+    [
+      "E",
+      40
+    ],
+    [
+      "r",
+      39
+    ],
+    [
+      "×",
+      38
+    ],
+    [
+      "Tests",
+      38
+    ],
+    [
+      "172\\.16\\.",
+      38
+    ],
+    [
+      "novomatic",
+      37
+    ],
+    [
+      "gdziegielewski",
+      37
+    ],
+    [
+      "const",
+      36
+    ],
+    [
+      "server",
+      36
+    ],
+    [
+      "c",
+      36
+    ],
+    [
+      "env",
+      34
+    ],
+    [
+      "L-03103",
+      34
+    ],
+    [
+      "l-3438",
+      34
+    ],
+    [
+      "warning",
+      34
+    ],
+    [
+      "L-3438",
+      33
+    ],
+    [
+      "brew",
+      32
+    ],
+    [
+      "Error",
+      32
+    ],
+    [
+      "chmod",
+      32
+    ],
+    [
+      "n",
+      32
+    ],
+    [
+      "pmset",
+      32
+    ],
+    [
+      "/opt/homebrew/bin/m1ddc",
+      31
+    ],
+    [
+      "MISS",
+      31
+    ],
+    [
+      "t",
+      30
+    ],
+    [
+      "kill",
+      30
+    ],
+    [
+      "p",
+      30
+    ],
+    [
+      "/Users/",
+      30
+    ],
+    [
+      "^",
+      29
+    ],
+    [
+      "print",
+      28
+    ],
+    [
+      "to_entries[]",
+      28
+    ],
+    [
+      "function",
+      27
+    ],
+    [
+      "yamllint",
+      27
+    ],
+    [
+      "fn",
+      27
+    ]
+  ],
+  "otherToolsSkipped": {
+    "grep": 735,
+    "subagent": 554,
+    "execute": 124,
+    "memory_store": 97,
+    "glob": 63,
+    "question": 51,
+    "skill": 39,
+    "websearch": 26,
+    "memory_delete": 23,
+    "memory_recall": 17,
+    "memory_recall_global": 6,
+    "memory_store_global": 5,
+    "mcp_Shell": 2,
+    "bash": 1,
+    "mcp_Edit": 1
+  }
+}

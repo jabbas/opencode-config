@@ -30,3 +30,8 @@ opencode.json.bak-*
 
 # OpenCode v2 background-service credentials (server password) — NEVER commit
 service.json
+
+# permission-model plugin: per-machine override
+permission-model.local.json
+# large audit corpus (5 MB); rebuild per scripts/permission-model/fixtures/README.md
+scripts/permission-model/fixtures/audit-commands.json
