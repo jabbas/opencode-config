@@ -45,9 +45,11 @@ same `opencode.json` automatically reads each machine's own `secrets/`.
 
 ## Models
 
-Only three model roles are used:
+Only four model roles are used:
 
 - **thinking** = `anthropic/claude-opus-5` → `architect`, `debugger`
+- **review** = a model from a *different* family, set per machine → `reviewer`
+  (it takes all code review, so reviews get a second opinion and spread the cost)
 - **default** = `anthropic/claude-sonnet-5` → everyone else
 - **small** = `anthropic/claude-haiku-4-5`
 
@@ -62,7 +64,8 @@ edit one line** in that file:
   "provider": { },
   "agent": {
     "architect": { "model": "anthropic/claude-opus-5" },
-    "debugger":  { "model": "anthropic/claude-opus-5" }
+    "debugger":  { "model": "anthropic/claude-opus-5" },
+    "reviewer":  { "model": "<other-family model>" }
   }
 }
 ```

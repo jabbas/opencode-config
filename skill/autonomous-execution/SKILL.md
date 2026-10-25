@@ -37,12 +37,12 @@ Produce a plan artifact following `writing-plans` conventions (`docs/superpowers
 Delegate all execution to subagents. You never execute yourself.
 
 - Pass each subagent a **complete, unambiguous task spec** (you did the design; they just execute).
-- Available specialists: `@coder`, `@frontend`, `@devops`, `@writer`, `@cloudflare`, `@general`; `@debugger` for diagnosis.
+- Available specialists: `@coder`, `@frontend`, `@devops`, `@writer`, `@cloudflare`, `@general`; `@debugger` for diagnosis; `@reviewer` for code review.
 - Instruct subagents to use **TDD, frequent commits, worktree/branch isolation**.
 - **STOP before any Hard Stop operation** — summarize, confirm with user, then delegate.
 
 ### 5. VERIFY
-Assess subagent reports. Commission an **independent review by a different subagent** (`@debugger` or `@coder` in code-review mode). You decide whether the work is truly done — do not rubber-stamp subagent self-reports.
+Assess subagent reports. Commission an **independent review by a different subagent** (`@reviewer` — never pass `model`; if its model is unavailable, run the same review on `@general` and record it in the audit report). You decide whether the work is truly done — do not rubber-stamp subagent self-reports.
 
 ### 6. REPORT
 **YOU compose the full content** — it is your independent, cross-cutting account as

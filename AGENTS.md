@@ -76,6 +76,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 | `architect` | Software/system architecture, ADRs, design, plans (bash: restricted; delegates) |
 | `autopilot` | User-only autonomous orchestrator; subagents execute. `bash: restricted`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it from the `subagent` tool) + `task: {autopilot: deny}` on all agents |
 | `debugger` | Full-stack debugging; diagnoses, then applies clear fixes |
+| `reviewer` | Independent code review on a different model family — model set per machine in `opencode.jsonc`; read-only (no edit, bash: git read + focused tests) |
 | `devops` | CI/CD, GitHub, Flux, Helm, Kustomize, git ops |
 | `jenkins` | Jenkins controller ops via the `jk` CLI — jobs, runs, logs, config.xml, artifacts, credentials, nodes, plugins. Owns the `jk` skill; all other agents delegate Jenkins actions here |
 | `ha` | Home Assistant — query entities, control devices, ESPHome via `esp.iot` SSH |
@@ -124,6 +125,23 @@ These apply to every agent (this file is injected globally via `Instruction.syst
   agent must too. The agent id comes from the markdown **filename**, not the
   frontmatter `name:` (`agents/general.md` → `general`).
 - **Jenkins → `@jenkins`.** Any Jenkins controller action — builds/runs, logs, jobs, `config.xml`, artifacts, test reports, credentials, nodes, queues, plugins — goes to `@jenkins`. Do NOT run the `jk` CLI yourself; the `jk` skill is denied to every agent except `jenkins`.
+- **Code review → `@reviewer`.** Every code-review dispatch — SDD task review and
+  scoped re-review, the final whole-branch review, `requesting-code-review`, and
+  autopilot's independent verification — goes to `@reviewer`, never to
+  `general`/`coder`/`debugger`. Where a superpowers template says
+  "Subagent (general-purpose)" for a review, read it as `@reviewer`.
+  - **Never pass `model`** when dispatching `@reviewer`, even though SDD templates
+    carry `model: [MODEL — REQUIRED]` — the reviewer's model comes from the
+    machine's `opencode.jsonc`. SDD Model Selection still applies to implementers;
+    for reviews, `@reviewer` deliberately replaces SDD's tiering (one model per machine).
+  - **Worktrees:** `@reviewer` cannot read outside its session directory
+    (`external_directory: deny`). When work happens in a worktree, dispatch the
+    review from a session moved into that worktree.
+  - **Fallback:** if the `@reviewer` dispatch fails because its model is unavailable
+    (quota, rate limit, provider down), re-run that same review once on `@general`
+    and record `Ruling: review <stage/task N> on @general — reviewer model
+    unavailable (<error>) — same-family review` in the SDD ledger / autopilot audit
+    report. No retries, no stop; the next review tries `@reviewer` again.
 
 ## Shell-Style Plugin
 
