@@ -8,6 +8,9 @@
 //
 // `passthrough: true` = the agent is in `cfg.restrictedAgents`: the plugin does not intervene, the
 // incoming (native) effect stands — except for `secret-deny`, which is always a deny.
+// `profile: true` = the agent is in `cfg.restrictedShell.agents` (spec §4.7a): for shell invocations
+// the plugin applies the read-only profile (restricted.js) instead of passthrough; its effect wins
+// over an incoming allow/ask (saved "Always" approvals do not widen it), never over an incoming deny.
 //
 // Note: classify() does not record WHICH namespace made a kubectl/helm/flux operation protected
 // (its `detail` is the matched irreversible pattern, e.g. "kubectl delete ns *"), so decide() also
@@ -18,6 +21,7 @@ import { parseCommand } from "./parse.js"
 import { unwrap } from "./unwrap.js"
 import { resolveTarget } from "./target.js"
 import { classify, matchAny, SEVERITY } from "./classify.js"
+import { checkRestricted } from "./restricted.js"
 import * as msg from "./messages.js"
 
 const RANK = { allow: 0, ask: 1, deny: 2 }
@@ -74,11 +78,23 @@ export function decide(classification, target, cfg, opts = {}) {
   const tcls = effectiveTargetCls(target, tool)
   const kind = target?.kind
   const name = target?.name ?? (kind === "local" || kind === "none" ? classification?.detail : undefined)
+  // read-only profile applies to shell invocations only (decideShell passes `inv`)
+  const profiled = Boolean(agent && inv && (cfg?.restrictedShell?.agents ?? []).includes(agent))
   const out = (effect, reason, message) => {
     const d = { effect, cls, target, targetCls: tcls, reason, classification }
     if (message) d.message = message
-    if (agent && (cfg?.restrictedAgents ?? []).includes(agent) && cls !== "secret-deny") d.passthrough = true
+    if (profiled) d.profile = true
+    else if (agent && (cfg?.restrictedAgents ?? []).includes(agent) && cls !== "secret-deny") d.passthrough = true
     return d
+  }
+
+  if (profiled && cls !== "secret-deny") {
+    const chk = checkRestricted(inv, cfg)
+    if (!chk.ok) return out("deny", "restricted-profile", msg.restrictedShell(agent, chk.what))
+    if (cls === "secret-ask") return out("ask", cls, msg.secretAsk(describe(classification, inv, tool)))
+    if (cls === "local-read" || cls === "local-write") return out("allow", cls)
+    // a profile tool that still reaches outside / is opaque / local-ask: not read-only
+    return out("deny", "restricted-profile", msg.restrictedShell(agent, describe(classification, inv, tool)))
   }
 
   switch (cls) {
@@ -124,6 +140,7 @@ export function reconcile(decision, incomingEffect, cfg) { // eslint-disable-lin
   const cls = decision?.cls
   if (cls === "secret-deny" || decision?.effect === "deny") return "deny"
   if (incomingEffect === "deny") return "deny"
+  if (decision?.profile) return decision.effect
   if (decision?.passthrough) return incomingEffect ?? decision.effect
   if (incomingEffect === "allow") {
     if (cls === "local-read" || cls === "local-write" || cls === "ext-read") return "allow"

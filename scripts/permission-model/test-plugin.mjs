@@ -184,8 +184,56 @@ test("path action keeps incoming ask when plugin does not care", async () => {
   assert.equal(ev.effect, "ask")
 })
 
-test("restricted agent passes through", async () => {
+test("restricted agent uses the read-only profile (spec §4.7a)", async () => {
   const p = await mk()
+  const a = p.before("ls x 2>/dev/null")
+  const evA = await p.evaluate(shell(a, ["ls x 2>/dev/null"], { agent: "architect", effect: "ask" }))
+  assert.equal(evA.effect, "allow")
+  assert.equal(evA.message, undefined)
+  const b = p.before("cat a > b")
+  const evB = await p.evaluate(shell(b, ["cat a > b"], { agent: "architect", effect: "ask" }))
+  assert.equal(evB.effect, "deny")
+  assert.match(evB.message, /architect ma powłokę tylko do odczytu/)
+  // a saved "Always" (incoming allow) does not widen the profile; an incoming deny is never softened
+  const c = p.before("git commit -m x")
+  assert.equal((await p.evaluate(shell(c, ["git commit -m x"], { agent: "architect", effect: "allow" }))).effect, "deny")
+  const d = p.before("ls")
+  assert.equal((await p.evaluate(shell(d, ["ls"], { agent: "architect", effect: "deny" }))).effect, "deny")
+  // read/edit stay passthrough
+  assert.equal((await p.evaluate({ action: "read", resources: [".env"], agent: "architect", effect: "allow" })).effect, "allow")
+  // shadow: effect untouched, log carries the profile decision
+  const s = await mk({ mode: "shadow" })
+  const e = s.before("cat a > b")
+  const evS = await s.evaluate(shell(e, ["cat a > b"], { agent: "architect", effect: "ask" }))
+  assert.equal(evS.effect, "ask")
+  assert.equal(evS.message, undefined)
+  const [l] = s.log()
+  assert.equal(l.decided, "deny")
+  assert.equal(l.applied, "ask")
+  assert.equal(l.reason, "restricted-profile")
+})
+
+test("restricted agent with profile: plugin error keeps the incoming effect", async () => {
+  const orig = console.error
+  console.error = () => {}
+  try {
+    const p = await mk({
+      deps: {
+        decideShell: () => {
+          throw new Error("boom")
+        },
+      },
+    })
+    const id = p.before("ls")
+    const ev = await p.evaluate(shell(id, ["ls"], { agent: "architect", effect: "ask" }))
+    assert.equal(ev.effect, "ask")
+  } finally {
+    console.error = orig
+  }
+})
+
+test("restricted agent without profile passes through", async () => {
+  const p = await mk({ cfg: { restrictedShell: { agents: [] } } })
   const id = p.before("cat x")
   const ev = await p.evaluate(shell(id, ["cat x"], { agent: "architect", effect: "ask" }))
   assert.equal(ev.effect, "ask")

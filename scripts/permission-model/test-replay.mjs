@@ -51,7 +51,8 @@ test("replay produced no errors", () => {
 })
 
 test("local commands never ask", { skip: noAudit }, () => {
-  const bad = full.entries.filter((e) => /^local-/.test(String(e.cls)) && e.effect !== "allow" && !(e.cls === "local-ask"))
+  // restricted-profile denials (spec §4.7a: read-only shell for restricted agents) are intended, not prompts
+  const bad = full.entries.filter((e) => /^local-/.test(String(e.cls)) && e.effect !== "allow" && !(e.cls === "local-ask") && e.reason !== "restricted-profile")
   assert.deepEqual(bad.map(show), [])
   // the work that is local must stay the overwhelming majority of the corpus (spec §2 anti-goal: more prompts than today)
   const share = full.allows / full.total

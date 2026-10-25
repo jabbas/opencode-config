@@ -28,6 +28,9 @@ export const OVERRIDES = {
   // Ruling after T8: `kubeseal` with cluster flags (--context/--controller-*/--fetch-cert/--validate/--re-encrypt) only
   // READS the controller's certificate (ext-read, allow); without cluster flags it is local. Only --recovery-unseal is secret-ask.
   TYX8Up: { expected: "allow", why: "§3", note: "kubeseal --context …: odczyt certyfikatu z kontrolera (ext-read), nie zapis" },
+  // §4.7a (2026-10-25): restricted agents have a read-only shell; the architect running SDD skill scripts
+  // (`bash …/sdd-workspace` creates a workspace dir, `bash …/task-brief`) is outside the profile.
+  QFtpwy: { expected: "deny", why: "§4.7a", note: "architekt uruchamia skrypty skilla SDD — poza profilem tylko do odczytu; deleguj" },
 }
 
 function mulberry32(a) {

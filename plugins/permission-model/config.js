@@ -67,6 +67,52 @@ export const DEFAULTS = {
     ha: ["ssh esp.iot *", "ssh -o BatchMode=yes esp.iot *", "scp * esp.iot:*", "scp esp.iot:* *"],
   },
   restrictedAgents: ["architect", "plan", "autopilot", "webscraper", "webresearcher", "webmonitor", "jira", "stitch-mcp"],
+  // spec §4.7a: read-only shell profile. Agents listed here get the profile for `shell` (instead of
+  // passthrough); read/edit stay passthrough via restrictedAgents. Not for agents that must run tests.
+  restrictedShell: {
+    agents: ["architect", "plan", "autopilot", "webscraper", "webresearcher", "webmonitor", "jira", "stitch-mcp"],
+    tools: [
+      "cat", "head", "tail", "ls", "tree", "wc", "grep", "egrep", "fgrep", "rg", "echo", "printf", "test", "[", "true", "false",
+      "pwd", "cd", "stat", "file", "du", "df", "diff", "cmp", "sort", "uniq", "cut", "tr", "column", "nl", "basename", "dirname",
+      "realpath", "readlink", "which", "type", "date", "uname", "whoami", "id", "sleep", "od", "hexdump", "shasum", "sha256sum",
+      "md5sum", "md5", "cksum", "jq", "yq", "find", "git",
+    ],
+    safeEnv: ["LC_*", "LANG", "TZ", "NO_COLOR", "COLUMNS", "TERM"],
+    denyArgs: {
+      find: ["-delete", "-exec*", "-execdir*", "-ok*", "-okdir*", "-fprint*", "-fls"],
+      sort: ["-o*", "--output*", "--compress-program*"],
+      yq: ["-i*", "--inplace*", "-s*", "--split-exp*"],
+      tree: ["-o*", "-R"],
+      rg: ["--pre*"],
+      file: ["-C", "--compile"],
+    },
+    maxPositionals: { uniq: 1 },
+    git: {
+      denyAll: ["--output*"],
+      verbs: {
+        status: {}, log: {}, show: {}, diff: {}, "rev-parse": {}, "ls-files": {}, "ls-tree": {}, "cat-file": {}, blame: {},
+        describe: {}, shortlog: {}, "merge-base": {}, "name-rev": {}, "for-each-ref": {}, "show-ref": {}, "count-objects": {},
+        whatchanged: {}, version: {},
+        grep: { deny: ["-O*", "--open-files-in-pager*"] },
+        branch: {
+          deny: ["-d", "-D", "-m", "-M", "-c", "-C", "-f", "-u", "--delete", "--move", "--copy", "--force", "--set-upstream-to*", "--unset-upstream", "--edit-description", "--track*", "--no-track"],
+          positionalNeeds: ["-l", "--list", "-a", "--all", "-r", "--remotes", "-v", "--verbose", "--contains*", "--no-contains*", "--merged*", "--no-merged*", "--points-at*", "--sort*", "--format*", "--show-current"],
+        },
+        tag: {
+          deny: ["-d", "-a", "-s", "-f", "-m", "-F", "-u", "-e", "--delete", "--annotate", "--sign", "--force", "--message*", "--file*", "--local-user*", "--edit"],
+          positionalNeeds: ["-l", "--list", "-n*", "--contains*", "--no-contains*", "--merged*", "--no-merged*", "--points-at*", "--sort*", "--format*", "-v", "--verify"],
+        },
+        remote: { first: ["get-url"], bare: true },
+        stash: { first: ["list", "show"] },
+        worktree: { first: ["list"] },
+        reflog: { first: ["show"], bare: true },
+        config: {
+          requireAny: ["--get*", "--list", "-l", "--show-origin", "--show-scope"],
+          deny: ["--unset*", "--add", "--replace-all", "--rename-section", "--remove-section", "--edit", "-e"],
+        },
+      },
+    },
+  },
   logFile: "~/.local/share/opencode/permission-model/decisions.jsonl",
 }
 

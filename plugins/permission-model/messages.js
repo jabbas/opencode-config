@@ -53,5 +53,9 @@ export const noCommandData = () => `${PREFIX}brak danych o komendzie — pytam d
 /** `błąd konfiguracji ({err}) — pytam dla bezpieczeństwa` */
 export const configError = (err) => `${PREFIX}błąd konfiguracji (${clip(err, 200)}) — pytam dla bezpieczeństwa`
 
+/** `{agent} ma powłokę tylko do odczytu — {co} poza profilem; użyj narzędzi read/grep/glob albo deleguj` (spec §4.7a) */
+export const restrictedShell = (agent, what) =>
+  `${PREFIX}${agent} ma powłokę tylko do odczytu — ${clip(what, 80)} poza profilem; użyj narzędzi read/grep/glob albo deleguj`
+
 /** `błąd pluginu ({err}) — pytam dla bezpieczeństwa` */
 export const pluginError = (err) => `${PREFIX}błąd pluginu (${err}) — pytam dla bezpieczeństwa`

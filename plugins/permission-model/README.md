@@ -13,6 +13,22 @@ OpenCode v2 plugin implementing permission model v2 (spec:
 | `parse.js` | Shell parser: `parseCommand(command) -> Simple[]`, `stripQuotes(text)` |
 | `unwrap.js` | `unwrap(simples, {cwd, home, tmpRoots, env}) -> Invocation[]`; `expandVars`, `hasUnresolved` |
 | `target.js` | `resolveTarget(inv, cfg, {home, tmpRoots, readFile, env}) -> Target`; `matchPattern`, `inTmp` |
+| `restricted.js` | `checkRestricted(inv, cfg) -> {ok} \| {ok:false, what, why}` — read-only shell profile (`cfg.restrictedShell`, spec §4.7a) for one invocation: tool allowlist (bare name or system bin dir), safe env only, redirects only to `/dev/null`/fd, per-tool `denyArgs`/`maxPositionals`, git verb rules (no `-c`/`--config-env`/`--exec-path`) |
+
+## Restricted agents (spec §4.7, §4.7a)
+
+- `restrictedAgents` → **passthrough**: the plugin keeps the incoming (config) effect, except `secret-deny`.
+- `restrictedShell.agents` → **profile** for `shell`: `decide()` judges every invocation with
+  `checkRestricted`; outside the profile → `deny` + `permission-model: <agent> ma powłokę tylko do odczytu — …`;
+  `secret-ask` → ask; in profile and `local-read`/`local-write` → allow. `reconcile` lets the profile
+  decision win over an incoming allow/ask (saved "Always" approvals do not widen it), never over an
+  incoming deny. read/edit/write of these agents stay passthrough.
+- Agents that must run tests (e.g. `reviewer`) belong to `restrictedAgents` only, not to `restrictedShell.agents`.
+- Why not "restricted = `local-read` only": the classifier's `local-read` means "does not reach outside",
+  not "does not write" — `find -delete`, `python3 -c`, `node -e`, `awk 'print >'`, `sort -o`, `perl -e`,
+  `cat x >&file`, `cat x <>file` are `local-read`. (For normal agents that is harmless: local writes are allowed.)
+- Config side (Task 10): give these agents `bash: {"*": "ask", …global deny list repeated…}` so the hook is
+  consulted at all (a config `deny` short-circuits before the hook and is never softened).
 
 ## Unwrapper / target contract (Task 3)
 

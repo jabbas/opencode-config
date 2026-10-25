@@ -73,12 +73,23 @@ test("decideShell: deny beats ask", () => {
   assert.equal(d.cls, "secret-deny")
 })
 
-test("decideShell: restricted agent -> passthrough, reconcile returns incoming", () => {
-  const d = run("kubectl get pods", { agent: "architect" })
+// passthrough = restricted agent WITHOUT the read-only shell profile (spec §4.7a; profile agents: test-restricted.mjs)
+const noProfile = { ...cfg, restrictedShell: { ...cfg.restrictedShell, agents: [] } }
+
+test("decideShell: restricted agent without profile -> passthrough, reconcile returns incoming", () => {
+  const d = run("kubectl get pods", { agent: "architect", cfg: noProfile })
   assert.equal(d.passthrough, true)
-  assert.equal(reconcile(d, "deny", cfg), "deny")
-  assert.equal(reconcile(d, "allow", cfg), "allow")
-  assert.equal(reconcile(d, "ask", cfg), "ask")
+  assert.equal(reconcile(d, "deny", noProfile), "deny")
+  assert.equal(reconcile(d, "allow", noProfile), "allow")
+  assert.equal(reconcile(d, "ask", noProfile), "ask")
+})
+
+test("decideShell: restricted agent with profile -> profile decision, no passthrough", () => {
+  const d = run("kubectl get pods", { agent: "architect" })
+  assert.equal(d.profile, true)
+  assert.ok(!d.passthrough)
+  assert.equal(d.effect, "deny")
+  assert.equal(reconcile(d, "allow", cfg), "deny")
 })
 
 test("decideShell: restricted agent still gets secret-deny", () => {
@@ -144,12 +155,21 @@ test("decide: cloud targets — gh/git are home, the rest prod", () => {
   assert.equal(irr.effect, "ask")
 })
 
-test("decide: restricted agent flags passthrough", () => {
-  const d = decide({ cls: "ext-write", verb: "apply" }, T("k8s", "prod", "c"), cfg, { agent: "jira", inv: { tool: "kubectl", args: [] } })
+test("decide: restricted agent without profile flags passthrough", () => {
+  const d = decide({ cls: "ext-write", verb: "apply" }, T("k8s", "prod", "c"), noProfile, { agent: "jira", inv: { tool: "kubectl", args: [] } })
   assert.equal(d.passthrough, true)
-  const s = decide({ cls: "secret-deny" }, T("local", "local"), cfg, { agent: "jira" })
+  const s = decide({ cls: "secret-deny" }, T("local", "local"), noProfile, { agent: "jira" })
   assert.equal(s.effect, "deny")
   assert.ok(!s.passthrough)
+})
+
+test("decide: profile agent — shell inv judged by the profile, no inv (path) -> passthrough", () => {
+  const d = decide({ cls: "ext-write", verb: "apply" }, T("k8s", "prod", "c"), cfg, { agent: "jira", inv: { tool: "kubectl", args: [] } })
+  assert.equal(d.effect, "deny")
+  assert.equal(d.profile, true)
+  assert.ok(!d.passthrough)
+  const p = decide({ cls: "local-read" }, T("local", "local"), cfg, { agent: "jira" })
+  assert.equal(p.passthrough, true)
 })
 
 // ---- reconcile ----

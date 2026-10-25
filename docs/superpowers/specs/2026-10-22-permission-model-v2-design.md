@@ -1,7 +1,7 @@
 # Model uprawnień v2 — „przedłużenie ręki”: domyślnie wolno, hamulce po skutkach, cel rozpoznawany przez plugin
 
 - **Data:** 2026-10-22
-- **Status:** Approved (2026-10-23)
+- **Status:** Approved (2026-10-23); poprawka §4.7a (2026-10-25, powłoka tylko do odczytu dla agentów ograniczonych — do zatwierdzenia)
 - **Zastępuje:** podejście „wariant A” (ponad 1000 reguł wzorców w `opencode.json`, commity `3480a60…f9822ad`).
   **Odkłada:** `docs/superpowers/specs/2026-10-19-agent-guard-design.md` (piaskownica z jego §4.4 → §8 tego dokumentu).
 - **Źródła faktów:** OpenCode v2.0.30 w `~/Projects/opencode`. Ścieżki względem tego repo:
@@ -279,10 +279,74 @@ Natywne okno pytania jest tym, co użytkownik zatwierdza. Nie ma przełącznika 
 
 | Agent(-i) | Ograniczenie |
 |---|---|
-| `autopilot` | bash tylko odczyt (echo/ls/test/head/cat/printf/mkdir); edit tylko `docs/superpowers/**`; zakaz delegowania do siebie |
-| `architect`, `plan`, `webscraper`, `webresearcher`, `webmonitor`, `jira`, `stitch-mcp` | ograniczona powłoka |
+| `autopilot` | powłoka tylko do odczytu (§4.7a); edit tylko `docs/superpowers/**`; zakaz delegowania do siebie |
+| `architect`, `plan`, `webscraper`, `webresearcher`, `webmonitor`, `jira`, `stitch-mcp` | powłoka tylko do odczytu (§4.7a) |
 | `jenkins`, `ha`, `webdebugger`, `web*` | `edit: false` |
 | wszyscy | reguły `task`/`subagent` bez zmian; skille per agent (`permission.skill`) bez zmian |
+
+### 4.7a Powłoka tylko do odczytu dla agentów ograniczonych (poprawka 2026-10-25)
+
+**Problem.** Agenci z §4.7 (`restrictedAgents`) mają dziś blok wzorców
+`{"*": deny, echo/ls/test/[/head/cat/printf/mkdir: allow, "*>*": deny}`, a plugin ich tylko przepuszcza
+(`passthrough`). To ten sam ogon wzorców, który §1.2 usuwa dla pozostałych agentów. Przypadek z 2026-10-25
+(architekt): odrzucone zostało `grep -v '^#' .git/packed-refs` (`grep` nie jest na liście) oraz
+`ls x 2>/dev/null` (`*>*` łapie każde przekierowanie). Wzorce nie odróżniają `2>/dev/null` od
+`> plik`, a wyjątek `"* 2>/dev/null": allow` przepuściłby `cat secrets/x > docs/leak.md 2>/dev/null`.
+Do tego deny z konfiguracji działa przed hookiem, więc shadow **nie widzi** odmów u tych agentów.
+
+**Dlaczego nie wystarczy „restricted = tylko `local-read`”.** Sprawdzone 2026-10-25 na `decideShell`
+(DEFAULTS, agent `coder`): klasa `local-read` znaczy „nie dotyka świata zewnętrznego”, a nie „nie
+zapisuje”. Jako `local-read` klasyfikowane są m.in.: `find . -delete`, `find … -exec rm {} +`,
+`python3 -c "open('f','w').write('x')"`, `node -e "require('fs').writeFileSync(…)"`,
+`awk '{print > "out"}'`, `sort -o out f`, `perl -e 'unlink …'`. Dla zwykłych agentów to bez znaczenia
+(lokalny zapis i tak jest `allow`), ale dla profilu tylko do odczytu byłaby to dziura.
+
+**Reguła.** Dla agenta z `restrictedAgents` plugin **sam decyduje** (już nie `passthrough`), według
+profilu `restrictedShell` w `permission-model.json`:
+
+| Warunek (każde wywołanie po rozpakowaniu, także w potoku, `&&`, `$(…)`, `xargs`) | Efekt |
+|---|---|
+| klasa `secret-deny` | deny (jak wszędzie, §4.2) |
+| klasa `secret-ask` (np. `cat .env`) | ask (jak wszędzie, §4.5) |
+| narzędzie spoza `restrictedShell.tools`, czasownik `git` spoza `restrictedShell.git`, argument z `restrictedShell.denyArgs[tool]` | **deny** + `message`: `permission-model: {agent} ma powłokę tylko do odczytu — {tool} {verb} poza profilem; użyj narzędzi read/grep/glob albo deleguj` |
+| przekierowanie zapisu (`>`, `>>`, `>|`, `&>`) na cel inny niż `/dev/null` lub deskryptor (`2>&1`, `>&2`) | **deny** (ten sam `message`) |
+| wszystko inne (narzędzie z profilu, bez zakazanych argumentów, przekierowania tylko na `/dev/null`/deskryptor) | allow |
+
+Wartości startowe `restrictedShell` (lista **narzędzi**, ~40 pozycji — nie wzorców komend; przekierowania
+ocenia parser, więc lista nie rośnie o warianty zapisu):
+
+- `tools`: `cat head tail ls tree wc grep egrep fgrep rg echo printf test [ true false pwd stat file du df
+  diff cmp sort uniq cut tr column nl basename dirname realpath readlink which date jq yq find git`
+- `git` (czasowniki): `status log show diff branch tag rev-parse ls-files ls-tree cat-file blame describe
+  shortlog reflog remote worktree stash config`; z zakazanymi argumentami niżej
+- `denyArgs`: `find: -delete -exec* -execdir* -ok* -okdir* -fprint* -fls`; `sort: -o* --output*`;
+  `yq: -i* --inplace*`; `tree: -o*`; `rg: --pre*`; `date: -s* --set*`;
+  `git branch: -d* -D* -m* -M* -c* -C* -f* --delete* --move* --copy* --force* --set-upstream* -u*`;
+  `git tag: -d* -a* -s* -f* -m* --delete*`, a `git tag <nazwa>` bez `-l`/`--list` = deny;
+  `git remote: add remove rm rename set-* prune update`; `git worktree: add remove prune move lock unlock repair`;
+  `git stash: push pop apply drop clear store create branch save` (zostaje `list`, `show`);
+  `git config`: tylko `--get*`, `--list`, `-l` (reszta = deny)
+- Celowo **poza** profilem: `sed`, `awk`, `perl`, `python*`, `node`, `bun`, `sh/bash/zsh`, `xargs` jako
+  narzędzie docelowe spoza listy, `make`, menedżery pakietów, `mkdir` (narzędzie `write` samo tworzy
+  katalogi), wszystkie zewnętrzne CLI (`kubectl`, `curl`, `gh`…) — tak jak dziś.
+
+**Konfiguracja (`opencode.json`) dla tych agentów.** Zamiast dzisiejszego bloku:
+`bash: {"*": "ask", …ta sama lista deny co globalnie (§4.2)…}`. Uzasadnienie:
+
+- `ask`, nie `deny`, bo plugin nigdy nie łagodzi deny (§5.3) — przy `deny` nie dostałby szansy;
+- `ask`, nie `allow`, bo jeśli plugin się nie załaduje, użytkownik **widzi pytanie**, a nie cichy
+  `allow` (fail-safe, jak znacznik `alive` z Task 10 Step 0);
+- lista deny powtórzona w bloku agenta, bo reguły agenta są doklejane po globalnych (ostatnie
+  dopasowanie wygrywa) i samo `"*": "ask"` nadpisałoby globalne deny;
+- w `enforce` plugin zamienia `ask` na `allow`/`deny` według tabeli wyżej. Błąd lub timeout pluginu
+  u agenta ograniczonego → zostaje `ask` z konfiguracji (nigdy `allow`).
+
+Tę zmianę włącza się dopiero razem z `enforce` (Task 10). W `shadow` `"*": "ask"` pytałoby o każdą komendę.
+
+**Prompty.** `agents/architect.md`, `agents/autopilot.md`, prompt `plan` w `opencode.json`, `AGENTS.md`:
+zamiast listy komend jedno zdanie: „Powłoka tylko do odczytu: narzędzia odczytu (cat, ls, grep, rg, git
+log/diff/show…), przekierowania tylko do `/dev/null`; zapis, skrypty i zewnętrzne CLI są odrzucane —
+deleguj.”
 
 **Wnioski z przeglądu skilli:**
 
@@ -329,7 +393,9 @@ Rozwijany na kopii w tmp, bo zapis w `plugins/*` przeładowuje serwer.
 
 ### 5.3 Zasady działania
 
-- Plugin **nigdy nie łagodzi** `deny` z konfiguracji.
+- Plugin **nigdy nie łagodzi** `deny` z konfiguracji. Dla agentów ograniczonych plugin decyduje według
+  profilu `restrictedShell` (§4.7a), a nie w trybie `passthrough`. Konfiguracja daje im `"*": "ask"`,
+  żeby plugin w ogóle był pytany.
 - Zapisane zgody „Always” wg klas — §4.3 (decyzja architekta, A5): dev/home respektowane; prod, §4.3 i
   odczyty sekretów §4.5 ignorowane (ustawia `ask`/`deny` mimo przychodzącego `allow`).
 - Pytanie idzie przez `effect="ask"` (+ `message`). `ctx.permission.assert` (tylko 2.0.30) **nie** ma pola
@@ -395,6 +461,8 @@ Rozstrzygnięte (nie do ponownej decyzji): brak cache celu i brak numeru konta A
 | 10 | §4.6 (A6) | Cel bez cache: `current-context` z `~/.kube/config` i z pliku `--kubeconfig` czytany od nowa przy każdej ocenie; `AWS_PROFILE` tylko z literalnej komendy lub env serwera; zmiana kontekstu/profilu w tej samej komendzie → cel nieznany → ask; brak numeru konta AWS w v1 (bez `sts`), w komunikatach tylko nazwy kontekstu/profilu |
 | 11 | §4.2, §4.5 (A7) | Plugin odtwarza zakazy §4.2 po rozpakowaniu komendy (`timeout`, `env`, zmienne) i rozwiązuje ścieżki z argumentów best-effort (`cat $HOME/.ssh/id_x`, `cp`, `source .env`). `grep`/`glob` asertują tylko wzorzec, nie ścieżkę — udokumentowane ograniczenie, zamknie je piaskownica (§8) |
 | 12 | §4.6, §5 (A8) | Jedna nazwa pliku konfiguracji: `permission-model.json` + `permission-model.local.json` (bez `agent-guard.json`). Wartości startowe (do potwierdzenia z tabelą oczekiwanych decyzji, §6 krok 0): `home: ["admin@k8s"]`, `dev: ["kind-*", "*-dev", "*-test", "*-sandbox"]`, `prod: ["*-prod", "*-prd", "*-production"]`, reszta → prod; profile służbowe w `permission-model.local.json` |
+
+| 13 | §4.7, §4.7a (poprawka 2026-10-25) | Agenci ograniczeni: plugin decyduje według profilu narzędzi tylko do odczytu (`restrictedShell`), przekierowania ocenia parser (`/dev/null` i deskryptory dozwolone), reszta deny. W konfiguracji `"*": "ask"` + powtórzone deny §4.2 zamiast bloku wzorców `*>*`. Powód: `local-read` ≠ „bez zapisu” (`find -delete`, `python -c`, `sort -o`…), więc sama klasa nie wystarcza |
 
 Dla porządku — **decyzje użytkownika** użyte w tym dokumencie:
 
