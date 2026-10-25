@@ -1846,6 +1846,52 @@
         }
       }
     },
+    "reviewer": {
+      "mode": "all",
+      "permission": {
+        "task": {
+          "*": "allow",
+          "autopilot": "deny",
+          "reviewer": "deny"
+        },
+        "edit": {
+          "*": "deny"
+        },
+        "external_directory": "deny",
+        "bash": {
+          "*": "deny",
+          "ls *": "allow",
+          "cat *": "allow",
+          "head *": "allow",
+          "test *": "allow",
+          "[ *": "allow",
+          "git diff": "allow",
+          "git diff *": "allow",
+          "git log": "allow",
+          "git log *": "allow",
+          "git show": "allow",
+          "git show *": "allow",
+          "git status": "allow",
+          "git status *": "allow",
+          "git rev-parse *": "allow",
+          "git merge-base *": "allow",
+          "pytest *": "allow",
+          "uv run pytest *": "allow",
+          "go test *": "allow",
+          "cargo test *": "allow",
+          "npm test": "allow",
+          "npm test *": "allow",
+          "pnpm test": "allow",
+          "pnpm test *": "allow",
+          "bun test": "allow",
+          "bun test *": "allow",
+          "*>*": "deny"
+        },
+        "skill": {
+          "*": "deny"
+        }
+      }
+    },
     "devops": {
       "mode": "all",
       "permission": {
