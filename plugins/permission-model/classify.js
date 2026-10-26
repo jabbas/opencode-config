@@ -310,10 +310,18 @@ function flagValues(args, names) {
 // ---------------------------------------------------------------------------------------------
 // write targets (shell-level writes, spec §4.4)
 
+// fd duplication / closing (`2>&1`, `>&2`, `>&-`, `3>&1-`, `<&3`): the target is a descriptor, not a file
+const isFdTarget = (t) => /^(?:\d+-?|-)$/.test(String(t ?? ""))
+
 const isWriteRedirect = (r) => {
   const op = String(r?.op ?? "")
-  if (!op || op.includes(">&") || op === "<" || op.startsWith("<")) return false
-  return op.includes(">")
+  if (!op) return false
+  if (op.includes("<>")) return true // `<>file` / `3<>file`: opened read-write, created if missing
+  if (/^\d*</.test(op)) return false // input, heredoc, here-string, `<&N`
+  if (!op.includes(">")) return false
+  // `>&file` (and `>& file`) sends stdout+stderr to a FILE; only a descriptor target is a duplication
+  if (op.includes(">&")) return !isFdTarget(r?.target)
+  return true
 }
 
 const positionals = (args) => {
@@ -1081,7 +1089,8 @@ export function classify(inv, target, cfg, ctx = {}) {
   if (matchAny(argText, sd.commands)) {
     return res("secret-deny", "secret-command", { detail: argText })
   }
-  const redirectWords = redirects.filter((r) => r?.target && !isDyn(r.target) && !String(r.op).includes(">&") && !/^\d+$/.test(r.target) && r.target !== "/dev/null").map((r) => ({ w: r.target, read: r.op === "<" || String(r.op).startsWith("<") }))
+  // every redirect that names a FILE (not a descriptor): `>&file` and `<>file` included
+  const redirectWords = redirects.filter((r) => r?.target && !isDyn(r.target) && !isFdTarget(r.target) && r.target !== "/dev/null").map((r) => ({ w: r.target, read: r.op === "<" || String(r.op).startsWith("<") }))
   const tmp0 = tmpRoots[0] ? tmpRoots[0].replace(/\/+$/, "") : undefined
   /** `$TMPDIR/x` -> `<tmpRoot>/x`; undefined when it cannot be expanded. */
   const expandTmp = (s) => {

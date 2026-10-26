@@ -756,6 +756,26 @@ const REAL = [
   ["gh release upload v1 f.tgz", "ext-write"],
   ["gh release delete v1", "irreversible"],
   ["wrangler deploy --dry-run", "ext-write"],
+  // --- 2026-10-26 (plan T10 Step 0a): `>&file` and `<>file` write a file; fd duplication does not
+  ["echo x >&out", "local-write"],
+  ["echo x >& out", "local-write"],
+  ["echo x <>out", "local-write"],
+  ["echo x 3<>out", "local-write"],
+  ["echo x >&$F", "local-write"],
+  ["echo x >&agents/a.md", "own-config", { cwd: CFGDIR }],
+  ["echo x <>opencode.json", "own-config", { cwd: CFGDIR }],
+  ["echo x >&~/.config/opencode/plugins/m.js", "own-config"],
+  ["echo x >&~/.ssh/id_x", "secret-deny"],
+  ["cat <>~/.ssh/id_x", "secret-deny"],
+  ["ls >&2", "local-read"],
+  ["ls 1>&2", "local-read"],
+  ["ls 2>&-", "local-read"],
+  ["ls 3>&1-", "local-read"],
+  ["ls >&/dev/null", "local-read"],
+  ["ls > /dev/null 2>&1", "local-read"],
+  ["cat < in", "local-read"],
+  ["cat <&3", "local-read"],
+  ["cat 0<&-", "local-read"],
 ]
 
 for (const [cmd, expected, opts] of REAL) {
