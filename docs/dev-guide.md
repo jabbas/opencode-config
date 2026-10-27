@@ -19,6 +19,7 @@ see `docs/superpowers/specs/2026-06-14-agents-md-slimming-design.md`.)
 ├── docs/
 │   ├── global-rules.md        # Safety rules (loaded via opencode.json instructions)
 │   ├── memory-rules.md        # Memory store/recall rules (loaded via opencode.json instructions)
+│   ├── design-principles.md   # Design principles (loaded via opencode.json instructions)
 │   ├── plans/                 # Implementation plans
 │   └── superpowers/           # Brainstorming specs and plans
 ├── plugins/superpowers.js     # Symlink → superpowers/.opencode/plugins/superpowers.js
@@ -276,7 +277,7 @@ hold real commands and are generated locally / gitignored; tests that need them 
 ## Configuration: opencode.json
 
 - **Models:** not set in `opencode.json`; each machine sets `model`/`small_model` in its gitignored `opencode.jsonc` (private machine: `anthropic/claude-sonnet-5-5` / `anthropic/claude-haiku-4-5`). Cross-machine pins in `opencode.json`: `autopilot` (sonnet-5-5), `architect` (opus-5-5). `reviewer` deliberately has no model in `opencode.json`: each machine sets `agent.reviewer.model` in its `opencode.jsonc` to a different model family (private machine: `kimi-code-plan-global/k3.1-pro-highspeed`; work machine: a `kilo/…` model)
-- **Instructions:** `docs/global-rules.md`, `docs/memory-rules.md`
+- **Instructions:** `~/.config/opencode/docs/global-rules.md`, `~/.config/opencode/docs/memory-rules.md`, `~/.config/opencode/docs/design-principles.md` (absolute `~/` paths because v2 resolves relative `instructions` with `globUp` from the session directory up to the project root — `core/src/config/plugin/instruction.ts` — so relative entries silently don't load outside this repo)
 - **Compaction:** Auto enabled with 10k reserved tokens
 - **Permissions:** `bash` defaults to `ask` (safe/common commands auto-allowed globally); `edit` defaults to `allow` except OpenCode config + secrets (`opencode.json`, `opencode.jsonc*`, `opencode.*.json`, `agents/**`, `secrets/**` — absolute `~/.config/opencode/...` and cwd-relative variants — plus project config dirs `.opencode/**` / `*/.opencode/**`) which `ask`. Do NOT put `write:`/`edit: true` in `agents/*.md` `tools:` — it becomes a trailing `edit * allow` that overrides those asks (md agent rules load after `opencode.json`; last match wins). Shell writes to the same paths are a bash speed-bump: global `ask` rules (just before the trailing `security *` denies) for `*>*P*`, `tee`/`sed -i`/`perl -i`/`cp`/`mv`/`ln`/`install *P*` with P ∈ `.config/opencode/`, `opencode.json`, `agents/`, `secrets/`, `.opencode/`; agents with their own trailing bash allows (debugger, devops, jenkins, ha) repeat the `*>*P*` asks (ha also `scp *P*`) so their allows don't reopen it. The bash resource is the raw command text incl. its redirections and heredoc body (`core/src/shell/parse.ts`). Not catchable: `python3`/`node` writes, `curl -o`, `git checkout`/`restore`. **Sensitive-data guard ("wariant A", 2026-10-19):** global `bash` allows external-change commands (`git push`, `gh pr`, `kubectl apply/delete/exec/…`, `helm upgrade/install`, `flux suspend/resume`) with `ask` exceptions placed after all allows (force/delete/mirror pushes, `kubectl delete` of ns/pvc/pv/crd/`--all`/`-f`, `kubectl get *secret*-o*`, `.env`/`secrets/`/`*.pem`/`*.key`/`*.token`/kube/aws/gcloud paths) and `deny` for `~/.ssh/id_*` (`.pub` allowed), `opencode/auth.json`, `gcloud … print-*-token`, `aws … get-secret-value|get-session-token`, `aws ecr get-login-password`; `ssh`/`printenv` are no longer globally allowed (default ask). Global `permission.read` has the same sensitive-path asks/denies (`edit` has the deny set). `grep`/`glob` permission resources are the search *pattern*, not the path — they cannot be path-guarded. **Do NOT put `read: true` in `agents/*.md` `tools:`** — it becomes a trailing `read * allow` that overrides these. Agents with their own `kubectl get *` allow (debugger, devops) repeat the `kubectl get *secret*-o*` ask. Shell style rules for all agents: `docs/global-rules.md` "Shell Command Style"
 - **Secrets:** Referenced via `{file:...}` syntax — actual values in `secrets/` (gitignored)
@@ -304,6 +305,7 @@ hold real commands and are generated locally / gitignored; tests that need them 
 | Memory config | Plugin: `plugins/mnemoteca.js` → `opencode-mnemoteca` fork (mnemoteca binary, SQLite + FTS5 + sqlite-vec; DB `~/.local/share/mnemoteca/mnemoteca.db`) |
 | Global rules | `docs/global-rules.md` |
 | Memory rules | `docs/memory-rules.md` |
+| Design principles | `docs/design-principles.md` |
 
 ## Superpowers Skills (14 total)
 

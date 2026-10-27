@@ -11,6 +11,12 @@ OpenCode configuration directory containing the Superpowers plugin system, skill
 - **NEVER run destructive commands** (disk wipe, ZFS destroy, `dd`, network reset) without explicit user confirmation
 - When a task requires a reboot to complete: **STOP**, summarize what was done, list what will happen after reboot, and tell the user to reboot manually and confirm when it is back up
 
+## Design Principles (All Agents)
+
+"If it doesn't exist, it can't break" + the Zen of Python govern all design, code,
+and config decisions. Full text and how agents apply it: `docs/design-principles.md`
+(loaded via `opencode.json` instructions).
+
 ## Working in This Repo
 
 Editing files in this repo — `superpowers.js`/plugin code, `agents/*.md`,

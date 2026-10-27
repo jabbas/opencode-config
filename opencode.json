@@ -1,8 +1,9 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "instructions": [
-    "docs/global-rules.md",
-    "docs/memory-rules.md"
+    "~/.config/opencode/docs/global-rules.md",
+    "~/.config/opencode/docs/memory-rules.md",
+    "~/.config/opencode/docs/design-principles.md"
   ],
   "compaction": {
     "auto": true,
