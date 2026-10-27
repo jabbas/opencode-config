@@ -66,7 +66,7 @@ export const DEFAULTS = {
   agentExceptions: {
     ha: ["ssh esp.iot *", "ssh -o BatchMode=yes esp.iot *", "scp * esp.iot:*", "scp esp.iot:* *"],
   },
-  restrictedAgents: ["architect", "plan", "autopilot", "webscraper", "webresearcher", "webmonitor", "jira", "stitch-mcp"],
+  restrictedAgents: ["architect", "plan", "autopilot", "webscraper", "webresearcher", "webmonitor", "jira", "stitch-mcp", "reviewer"],
   // spec §4.7a: read-only shell profile. Agents listed here get the profile for `shell` (instead of
   // passthrough); read/edit stay passthrough via restrictedAgents. Not for agents that must run tests.
   restrictedShell: {
