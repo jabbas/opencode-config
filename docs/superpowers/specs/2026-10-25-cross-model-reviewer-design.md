@@ -124,6 +124,12 @@ cfg -> reviewer: agent.reviewer.model {style.stroke-dash: 3}
 - `tools`: `{"memory_*": false}` — brak narzędzi pamięci (Mnemoteca); dane trafiałyby
   do zewnętrznego dostawcy, a kontekst i tak przychodzi z szablonu review. W v2 to
   reguła permission `deny` (ukrywa i blokuje). *[decyzja użytkownika 2026-10-28]*
+- `tools`: też `websearch`, `opencode_session_rename`, `opencode_session_move`,
+  `opencode_worktree_create` = `false` — bez wyszukiwania w sieci i bez narzędzi
+  OpenCode zmieniających stan (id = `<namespace>_<name>`; działa też w code mode).
+  `worktree_remove` blokuje już `edit: deny` (jego uprawnienie to `edit`). Narzędzia
+  read-only (`models`, `worktree_list`, `*_mcp_resource*`) zostają.
+  *[decyzja użytkownika 2026-10-28]*
 - `task`: standardowa reguła `{"*": "allow", "autopilot": "deny", "reviewer": "deny"}`.
 - `skill`: `{"*": "deny"}` — cały proces przychodzi w prompcie z szablonu.
 - `external_directory`: `deny` — reviewer czyta tylko w katalogu sesji (repo /

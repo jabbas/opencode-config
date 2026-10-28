@@ -1850,7 +1850,11 @@
     "reviewer": {
       "mode": "all",
       "tools": {
-        "memory_*": false
+        "memory_*": false,
+        "websearch": false,
+        "opencode_session_rename": false,
+        "opencode_session_move": false,
+        "opencode_worktree_create": false
       },
       "permission": {
         "task": {

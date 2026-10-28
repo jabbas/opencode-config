@@ -20,6 +20,7 @@
 - `edit`: `{"*": "deny"}` (gate'uje też `write`).
 - `external_directory`: `"deny"`.
 - `tools`: `{"memory_*": false}` — bez narzędzi pamięci (dane trafiałyby do zewnętrznego dostawcy). *(updated after final review)*
+- `tools`: też `websearch`, `opencode_session_rename`, `opencode_session_move`, `opencode_worktree_create` = `false`; `worktree_remove` blokuje już `edit: deny`. *(updated after final review)*
 - Bash: `"*": "deny"`; allow tylko read-only git, `test`/`[`, punktowe testy; deny `git *--output*` i `git *--no-index*` po allowach gita; `"*>*": "deny"` jako **ostatni** klucz (last match wins). Żadnego `ask`. Bez `ls`/`cat`/`head` — pliki czyta narzędziami read/grep/glob. *(updated after final review)*
 - `agents/reviewer.md` frontmatter **nie może** mieć `write: true` ani `edit: true` w `tools:` (dev-guide: nadpisuje deny).
 - Prywatny `opencode.jsonc`: `agent.reviewer.model` = `kimi-code-plan-global/k3.1-pro-highspeed`.
