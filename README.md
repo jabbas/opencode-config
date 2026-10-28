@@ -227,10 +227,17 @@ jq '{model, small_model, architect: .agent.architect.model}' /tmp/cfg.json
 
 # per-agent resolution
 opencode debug agent architect
+
+# reviewer really runs on its own model
+opencode run --standalone --agent reviewer "Reply with OK"   # header must show the reviewer model from opencode.jsonc, not the default
 ```
 
 `model`/`small_model` coming back `null` means `opencode.jsonc` is missing or not
 being read.
+
+An invalid or retired `agent.reviewer.model` id falls back silently to the default
+model — run the reviewer check after setting or changing it (especially `kilo/…` ids
+on the work machine).
 
 To confirm two machines share an identical base:
 

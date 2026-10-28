@@ -184,6 +184,24 @@ cfg -> reviewer: agent.reviewer.model {style.stroke-dash: 3}
 **`docs/dev-guide.md` / `README.md`**: jeśli zawierają listę agentów lub opis
 warstwy modeli per maszyna — dopisać `reviewer` i `agent.reviewer.model`.
 
+### 5.4 Wykrywanie cichego fallbacku (po teście E2E 2026-10-27)
+
+**Ustalenie:** nieistniejący/wycofany id w `agent.reviewer.model` (test:
+`kimi-code-plan-global/does-not-exist`) **nie daje błędu** — agent po cichu działa na
+modelu domyślnym (`anthropic/claude-sonnet-5-5`), bez WARN/ERROR w logu. Fallback z §5.3
+(oparty na błędzie dispatchu) tego nie łapie; review byłoby same-family bez śladu.
+
+**Poprawki:**
+- `agents/reviewer.md`: pierwsza linia każdego raportu to
+  `Model: <providerID>/<modelID>` (z sekcji „Your Model” własnego system promptu;
+  `Model: unknown`, gdy niewidoczny) — jedyny wyjątek od formatu szablonu.
+- `AGENTS.md` (reguła „Code review → `@reviewer`”) + krok 5 VERIFY w
+  `skill/autonomous-execution/SKILL.md`: koordynator czyta linię `Model:`; brak /
+  `unknown` / ta sama rodzina co implementer (rodzina, nie dostawca —
+  `kilo/anthropic/…` to Claude) → `Ruling: review <etap/task N> same-family (<model>)
+  — reviewer model not applied — same-family review` w ledgerze / raporcie audytu.
+- `README.md` („Verifying the setup”): kontrola konfiguracji poniżej (§6).
+
 ## 6. Weryfikacja (do uruchomienia przez buildera / użytkownika)
 
 - `bash scripts/check-skill-whitelists.sh` — zero `[FAIL]`; nowe `[INFO]` orphany
@@ -198,6 +216,10 @@ warstwy modeli per maszyna — dopisać `reviewer` i `agent.reviewer.model`.
   Ruling; przywrócić poprawny id po teście.
 - Krótki run SDD na małym planie (lub ręczny dispatch szablonu task review) →
   raport w formacie szablonu, z modelu Kimi.
+- Kontrola konfiguracji po ustawieniu/zmianie `agent.reviewer.model` (README,
+  „Verifying the setup”): `opencode run --standalone --agent reviewer "Reply with OK"`
+  → nagłówek pokazuje model reviewera z `opencode.jsonc`, nie domyślny (zwłaszcza
+  id `kilo/…` na maszynie służbowej).
 
 ## 7. Rozważone i odrzucone / odłożone
 
