@@ -1861,9 +1861,6 @@
         "external_directory": "deny",
         "bash": {
           "*": "deny",
-          "ls *": "allow",
-          "cat *": "allow",
-          "head *": "allow",
           "test *": "allow",
           "[ *": "allow",
           "git diff": "allow",
@@ -1886,6 +1883,8 @@
           "pnpm test *": "allow",
           "bun test": "allow",
           "bun test *": "allow",
+          "git *--output*": "deny",
+          "git *--no-index*": "deny",
           "*>*": "deny"
         },
         "skill": {

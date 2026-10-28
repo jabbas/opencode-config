@@ -42,7 +42,7 @@ Delegate all execution to subagents. You never execute yourself.
 - **STOP before any Hard Stop operation** — summarize, confirm with user, then delegate.
 
 ### 5. VERIFY
-Assess subagent reports. Commission an **independent review by a different subagent** (`@reviewer` — never pass `model`; if its model is unavailable, run the same review on `@general` and record it in the audit report; check the report's `Model:` line per AGENTS.md). You decide whether the work is truly done — do not rubber-stamp subagent self-reports.
+Assess subagent reports. Commission an **independent review by a different subagent** (`@reviewer` — never pass `model`; if its model is unavailable, run the same review on `@general` (with `model`) and record it in the audit report; check the report's `Model:` line per AGENTS.md). You decide whether the work is truly done — do not rubber-stamp subagent self-reports.
 
 ### 6. REPORT
 **YOU compose the full content** — it is your independent, cross-cutting account as

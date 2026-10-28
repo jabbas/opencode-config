@@ -145,9 +145,10 @@ These apply to every agent (this file is injected globally via `Instruction.syst
     review from a session moved into that worktree.
   - **Fallback:** if the `@reviewer` dispatch fails because its model is unavailable
     (quota, rate limit, provider down), re-run that same review once on `@general`
-    and record `Ruling: review <stage/task N> on @general — reviewer model
-    unavailable (<error>) — same-family review` in the SDD ledger / autopilot audit
-    report. No retries, no stop; the next review tries `@reviewer` again.
+    (this dispatch does pass `model`, per SDD Model Selection) and record
+    `Ruling: review <stage/task N> on @general — reviewer model unavailable
+    (<error>) — same-family review` in the SDD ledger / autopilot audit report.
+    No retries, no stop; the next review tries `@reviewer` again.
   - **Verify the reviewer's model** (a wrong/retired id in `opencode.jsonc` silently
     falls back to the default model, no error): read the report's `Model:` line; if it
     is missing/`unknown` or the implementer's family (compare family, not provider —

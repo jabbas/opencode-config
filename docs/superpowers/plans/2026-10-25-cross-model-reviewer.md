@@ -19,7 +19,7 @@
 - `skill`: `{"*": "deny"}`.
 - `edit`: `{"*": "deny"}` (gate'uje też `write`).
 - `external_directory`: `"deny"`.
-- Bash: `"*": "deny"`; allow tylko read-only git, `ls`/`cat`/`head`/`test`/`[`, punktowe testy; `"*>*": "deny"` jako **ostatni** klucz (last match wins). Żadnego `ask`.
+- Bash: `"*": "deny"`; allow tylko read-only git, `test`/`[`, punktowe testy; deny `git *--output*` i `git *--no-index*` po allowach gita; `"*>*": "deny"` jako **ostatni** klucz (last match wins). Żadnego `ask`. Bez `ls`/`cat`/`head` — pliki czyta narzędziami read/grep/glob. *(updated after final review)*
 - `agents/reviewer.md` frontmatter **nie może** mieć `write: true` ani `edit: true` w `tools:` (dev-guide: nadpisuje deny).
 - Prywatny `opencode.jsonc`: `agent.reviewer.model` = `kimi-code-plan-global/k3.1-pro-highspeed`.
 - `opencode.jsonc.kimi`: `agent.reviewer.model` = `anthropic/claude-sonnet-5-5`; `architect` i `debugger` → `kimi-code-plan-global/k3.1-pro-highspeed`.
@@ -77,7 +77,7 @@ Treść promptu (brzmienie dowolne, wszystkie punkty obowiązkowe):
     "external_directory": "deny",
     "bash": {
       "*": "deny",
-      "ls *": "allow", "cat *": "allow", "head *": "allow", "test *": "allow", "[ *": "allow",
+      "test *": "allow", "[ *": "allow",
       "git diff": "allow", "git diff *": "allow",
       "git log": "allow", "git log *": "allow",
       "git show": "allow", "git show *": "allow",
@@ -88,12 +88,15 @@ Treść promptu (brzmienie dowolne, wszystkie punkty obowiązkowe):
       "npm test": "allow", "npm test *": "allow",
       "pnpm test": "allow", "pnpm test *": "allow",
       "bun test": "allow", "bun test *": "allow",
+      "git *--output*": "deny", "git *--no-index*": "deny",
       "*>*": "deny"
     },
     "skill": { "*": "deny" }
   }
 }
 ```
+
+*(updated after final review: removed `ls *`/`cat *`/`head *`; added the `--output`/`--no-index` denies)*
 
 - [ ] **Step 4: Zweryfikuj konfigurację agenta**
 
@@ -244,10 +247,11 @@ Expected: raport wraca; w sesji/logu (`~/.local/share/opencode/log/opencode.log`
 Dispatch `@reviewer`: „Utwórz plik `x.txt`, potem uruchom `git commit --allow-empty -m test`, potem `git checkout -b tmp`. Zaraportuj wynik każdej próby”.
 Expected: wszystkie trzy odmówione (edit deny, bash deny); brak nowego pliku, commita i brancha.
 
-- [ ] **Step 3: Fallback**
+- [ ] **Step 3: Błędny id modelu** *(updated after final review — zweryfikowane zachowanie)*
 
 Tymczasowo zmień `agent.reviewer.model` w `opencode.jsonc` na `kimi-code-plan-global/does-not-exist`, dispatch `@reviewer` jak w kroku 1.
-Expected: dispatch kończy się błędem; koordynator (wg reguły z `AGENTS.md`) powtarza review na `@general` i podaje linię `Ruling: … reviewer model unavailable …`. Przywróć poprawny id i potwierdź `opencode debug agent reviewer`.
+Expected: dispatch **kończy się sukcesem** na modelu domyślnym (cichy fallback, bez błędu); linia `Model:` raportu pokazuje rodzinę domyślną → koordynator (wg reguły z `AGENTS.md`) zapisuje `Ruling: … reviewer model not applied …`. Przywróć poprawny id i potwierdź przez `opencode debug agents` + `jq` dla `id=="reviewer"`.
+Fallback na `@general` przy prawdziwym błędzie dostawcy (limit, rate limit, awaria) — nieprzetestowany.
 
 - [ ] **Step 4: Brak modelu na maszynie**
 

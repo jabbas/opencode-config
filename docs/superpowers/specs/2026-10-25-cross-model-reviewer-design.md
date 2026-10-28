@@ -112,11 +112,15 @@ cfg -> reviewer: agent.reviewer.model {style.stroke-dash: 3}
   go dispatchować.
 - `edit`/`write`: deny.
 - `bash`: `"*": "deny"`, allow dla odczytu gita (`git diff *`, `git log *`,
-  `git show *`, `git status *`, `git rev-parse *`, `git merge-base *`), podstawowych
-  read-only (`ls`, `cat`, `head`, `test`, `[`) i **punktowych testów**
-  (`pytest *`, `uv run pytest *`, `go test *`, `cargo test *`, `npm test *`,
-  `pnpm test *`, `bun test *`); `"*>*": "deny"`. Reszta to `deny`, nie `ask` —
-  autopilot działa bez człowieka i `ask` by go zawiesił.
+  `git show *`, `git status *`, `git rev-parse *`, `git merge-base *`), `test`, `[`
+  i **punktowych testów** (`pytest *`, `uv run pytest *`, `go test *`,
+  `cargo test *`, `npm test *`, `pnpm test *`, `bun test *`); potem
+  `"git *--output*": "deny"`, `"git *--no-index*": "deny"` i na końcu
+  `"*>*": "deny"`. Reszta to `deny`, nie `ask` — autopilot działa bez człowieka i
+  `ask` by go zawiesił. *Po final review:* bez `ls`/`cat`/`head` — nadpisywały globalne
+  deny na sekrety, a argumentów shella nie obejmuje `external_directory`; pliki
+  reviewer czyta narzędziami read/grep/glob. `--output` zapisuje plik bez `>`,
+  `--no-index` czyta dowolny plik.
 - `task`: standardowa reguła `{"*": "allow", "autopilot": "deny", "reviewer": "deny"}`.
 - `skill`: `{"*": "deny"}` — cały proces przychodzi w prompcie z szablonu.
 - `external_directory`: `deny` — reviewer czyta tylko w katalogu sesji (repo /
@@ -211,9 +215,11 @@ modelu domyślnym (`anthropic/claude-sonnet-5-5`), bez WARN/ERROR w logu. Fallba
   z `opencode.jsonc` (prywatnie: `kimi-code-plan-global/k3.1-pro-highspeed`), a nie
   model rodzica. Potwierdza, że model agenta wygrywa przy pominiętym parametrze.
 - `@reviewer` dostaje odmowę na edycję pliku i na `git commit`/`git checkout`.
-- Fallback: dispatch `@reviewer` z celowo niedostępnym modelem (np. tymczasowo
-  błędny id w `opencode.jsonc`) → koordynator przechodzi na `@general` i zapisuje
-  Ruling; przywrócić poprawny id po teście.
+- Błędny id modelu (tymczasowo w `opencode.jsonc`, zweryfikowane 2026-10-28):
+  dispatch `@reviewer` **kończy się sukcesem** na modelu domyślnym; linia `Model:`
+  raportu pokazuje rodzinę domyślną → koordynator zapisuje Ruling „reviewer model not
+  applied” (§5.4); przywrócić poprawny id po teście. Fallback na `@general` przy
+  prawdziwym błędzie dostawcy (limit, rate limit, awaria) — **nieprzetestowany**.
 - Krótki run SDD na małym planie (lub ręczny dispatch szablonu task review) →
   raport w formacie szablonu, z modelu Kimi.
 - Kontrola konfiguracji po ustawieniu/zmianie `agent.reviewer.model` (README,
