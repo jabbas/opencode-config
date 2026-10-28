@@ -1849,6 +1849,9 @@
     },
     "reviewer": {
       "mode": "all",
+      "tools": {
+        "memory_*": false
+      },
       "permission": {
         "task": {
           "*": "allow",

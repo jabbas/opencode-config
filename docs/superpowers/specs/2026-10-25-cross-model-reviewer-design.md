@@ -121,6 +121,9 @@ cfg -> reviewer: agent.reviewer.model {style.stroke-dash: 3}
   deny na sekrety, a argumentów shella nie obejmuje `external_directory`; pliki
   reviewer czyta narzędziami read/grep/glob. `--output` zapisuje plik bez `>`,
   `--no-index` czyta dowolny plik.
+- `tools`: `{"memory_*": false}` — brak narzędzi pamięci (Mnemoteca); dane trafiałyby
+  do zewnętrznego dostawcy, a kontekst i tak przychodzi z szablonu review. W v2 to
+  reguła permission `deny` (ukrywa i blokuje). *[decyzja użytkownika 2026-10-28]*
 - `task`: standardowa reguła `{"*": "allow", "autopilot": "deny", "reviewer": "deny"}`.
 - `skill`: `{"*": "deny"}` — cały proces przychodzi w prompcie z szablonu.
 - `external_directory`: `deny` — reviewer czyta tylko w katalogu sesji (repo /
