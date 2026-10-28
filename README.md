@@ -226,7 +226,8 @@ opencode debug config > /tmp/cfg.json      # ~70 KB; don't pipe straight to jq
 jq '{model, small_model, architect: .agent.architect.model}' /tmp/cfg.json
 
 # per-agent resolution
-opencode debug agent architect
+opencode debug agents > /tmp/agents.json   # ~4 MB; don't pipe straight to jq
+jq -c '.[] | select(.id=="architect") | {id, model}' /tmp/agents.json
 
 # reviewer really runs on its own model
 opencode run --standalone --agent reviewer "Reply with OK"   # header must show the reviewer model from opencode.jsonc, not the default
