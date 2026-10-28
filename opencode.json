@@ -2531,8 +2531,9 @@
     "stitch": {
       "type": "local",
       "command": [
-        "node",
-        "/Users/jabbas/.config/opencode/scripts/stitch-mcp-proxy.mjs"
+        "sh",
+        "-c",
+        "node \"$HOME/.config/opencode/scripts/stitch-mcp-proxy.mjs\""
       ],
       "enabled": true,
       "environment": {
