@@ -11,7 +11,7 @@
   },
   "plugin": [
     "@andrzejchm/opencode-anthropic-auth@2.3.0",
-    "github:jabbas/opencode-kilo-gateway#3852ff4aa7505f3e4ee8d8119f9ff28c78db8509"
+    "github:jabbas/opencode-kilo-gateway#bc9b8598d21f8c116c13b9d5406c8039e99806ac"
   ],
   "permission": {
     "read": {
