@@ -257,3 +257,5 @@ Expected: agent rozwiązuje się bez błędu (model domyślny/rodzica). Przywró
 - [ ] **Step 5: Raport dla użytkownika**
 
 Zgłoś: wyniki kroków 1–4, `[INFO]` orphany z `check-skill-whitelists.sh`, oraz przypomnienie: **na służbowej maszynie** dopisać `"reviewer": { "model": "kilo/<model>" }` (rekomendacja `kilo/openai/gpt-6.1-sol` lub `kilo/google/gemini-4-argon`) do aktywnego wariantu `opencode.jsonc`.
+
+> Done 2026-10-28: work machine reviewer = kilo/moonshotai/kimi-k3.1-pro (company Kilo).

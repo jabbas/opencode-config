@@ -51,7 +51,7 @@
 ## Status (2026-10-16)
 
 - Tasks 0–5 done: fork `jabbas/opencode-mnemoteca` branch `opencode-v2` (83c2db7, a581ee3, 0c6562d; tests green); private-machine migration done (63 collections exported; DB now 66/241 incl. later memories; legacy DB and backup kept); config wired in c0ab757; upstream PR open: https://github.com/gandazgul/opencode-mnemoteca/pull/1 (awaiting review).
-- Remaining: Task 6 (work machine) and "After merge".
+- Task 6 (work machine) done 2026-10-28. Remaining: "After merge".
 
 ---
 
@@ -159,10 +159,12 @@ Follows `~/Projects/mnemoteca/docs/migrate-from-mnemosyne.md` Path 2. **Human ru
 
 ### Task 6: Work machine rollout (on the work machine)
 
-- [ ] **Step 1:** `cd ~/.config/opencode && git pull && git submodule update --init opencode-mnemoteca && (cd opencode-mnemoteca && npm ci && npm run build)`.
-- [ ] **Step 2:** Inventory: `which mnemosyne`, `mnemosyne stats` (path + counts). No legacy DB → skip to Step 4 after `brew install gandazgul/tap/mnemoteca`.
-- [ ] **Step 3:** Repeat Task 3 Steps 2–8 with this machine's binary path and counts.
-- [ ] **Step 4:** Repeat Task 4 Step 4 smoke (no evidence file needed). If `opencode.jsonc` there references `opencode-mnemosyne`, remove it (local, gitignored).
+> Done: data migrated 2026-10-08 (mnemosyne → mnemoteca, 0.3.4); v2 rollout 2026-10-28 via docs/superpowers/plans/2026-10-28-work-macbook-v2-migration.md (plugin 57230ea, A4 smoke passed).
+
+- [x] **Step 1:** `cd ~/.config/opencode && git pull && git submodule update --init opencode-mnemoteca && (cd opencode-mnemoteca && npm ci && npm run build)`.
+- [x] **Step 2:** Inventory: `which mnemosyne`, `mnemosyne stats` (path + counts). No legacy DB → skip to Step 4 after `brew install gandazgul/tap/mnemoteca`.
+- [x] **Step 3:** Repeat Task 3 Steps 2–8 with this machine's binary path and counts.
+- [x] **Step 4:** Repeat Task 4 Step 4 smoke (no evidence file needed). If `opencode.jsonc` there references `opencode-mnemosyne`, remove it (local, gitignored).
 
 ### After merge (not part of this execution)
 

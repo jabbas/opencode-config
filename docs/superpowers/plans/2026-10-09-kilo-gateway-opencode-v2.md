@@ -214,6 +214,8 @@ Needs the human for the browser login. Use a file symlink (v2.0.22 skips directo
 
 ### Task 7: Live test on OpenCode v1.18.35 (work machine)
 
+> Superseded 2026-10-28: the work machine moved to OpenCode v2.2.0 with the v2 fork; live-tested there (work migration plan Task 6, A6/A7). No v1 test needed.
+
 - [ ] **Step 1:** On the work machine: clone/fetch `jabbas/opencode-kilo-gateway` branch `opencode-v2` into `~/Projects/opencode-kilo-gateway`, `yarn install --immutable && yarn build`.
 - [ ] **Step 2:** Point opencode at the build: in `~/.config/opencode/opencode.json` working tree replace `"@dragenetlabs/opencode-kilo-gateway"` by the absolute `file://…/dist/index.js` path (or `plugins/kilo-gateway.js` symlink — whichever v1 1.18.35 loads; verify with log). Do not commit.
 - [ ] **Step 3:** `opencode run --print-logs --log-level DEBUG -m kilo/deepseek/deepseek-v4.1-flash "reply ok"` → `ok`; log shows the plugin loaded once, no load error for the object default export; `opencode models | grep -c '^kilo/'` equals the pre-change count.
