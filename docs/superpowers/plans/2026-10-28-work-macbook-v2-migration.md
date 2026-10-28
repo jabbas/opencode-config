@@ -108,7 +108,7 @@
 
 ### Task 6: Akceptacja (F6)
 
-- [x] **Step 1 (A2):** W `~/.local/share/opencode/log/` od `v2_start`: po jednym `loading plugin` dla superpowers, mnemoteca, kilo-gateway, anthropic-auth, shell-style, permission-model; 0 × `LoadError`/`PluginModule`/`level=ERROR`.
+- [x] **Step 1 (A2):** W `~/.local/share/opencode/log/` od `v2_start`: po jednym `loading plugin` dla superpowers, mnemoteca, kilo-gateway, anthropic-auth, shell-style, permission-model; 0 × `LoadError`/`PluginModule`/`level=ERROR`. — PASS for plugin loading (spec A2); 4 × level=ERROR were Kilo QuotaExceeded model errors, tracked separately
 - [x] **Step 2 (A3):** [U] krótka sesja w `~/Projects/<dowolny projekt>`; potem python3 ro: `instruction_state`/`instruction_blob` tej sesji zawierają ścieżki `…/docs/global-rules.md`, `…/docs/memory-rules.md`, `…/docs/design-principles.md`.
 - [x] **Step 3 (A4):** `opencode run -m kilo/deepseek/deepseek-v4.1-flash-1017` w `$TMPDIR` służbowej z poleceniem użycia `memory_recall_global` dla frazy znanej z pamięci służbowej → wynik niepusty; `mnemoteca stats --format json` → `document_count` ≥ manifest.
 - [x] **Step 4 (A5):** jedna stara sesja v1 (ID z `session`, najnowsza sprzed migracji): `opencode session export <id>` → zawiera wiadomości; [U] ta sama sesja widoczna na liście sesji w TUI.
