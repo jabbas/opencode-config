@@ -10,20 +10,25 @@
 // Self-healing auth: Google periodically forces a reauth of the ADC login
 // (Workspace admin policy); gcloud then fails with "Reauthentication failed.
 // cannot prompt during non-interactive execution".
-// - initialize, ping, tools/list and notifications/* are sent WITHOUT a token
-//   and never call gcloud. Stitch answers them unauthenticated, and OpenCode
-//   gives them only 30 s, so the MCP server stays up while ADC is stale.
-// - Every other method (tools/call, resources/*, ...) needs a token. If
-//   minting it fails, the proxy shows a macOS notification and runs
+// - Only AUTH_METHODS (tools/call, resources/read) get a token. If minting it
+//   fails, the proxy shows a macOS notification and runs
 //   `gcloud auth application-default login` (opens the browser), then mints
-//   again. Tool calls may take hours in OpenCode, so waiting is fine there.
+//   again. Tool calls may take hours in OpenCode, so waiting is fine there,
+//   and the browser opens only when the user actually uses a Stitch tool.
+// - Every other method (initialize, ping, tools/list, resources/list,
+//   prompts/list, notifications/*, unknown ones) is sent WITHOUT a token and
+//   never calls gcloud. OpenCode sends catalog calls on every (re)connect with
+//   a 30 s timeout; they must answer fast and never open a browser in the
+//   background. Stitch answers them unauthenticated, so the MCP server stays
+//   up while ADC is stale. Because login is tied to user intent, there is no
+//   cross-process lock/cooldown for the reconnecting proxy processes.
 // - One login at a time (single-flight; gcloud's callback uses port 8085).
 //   A failed or timed-out login starts a cooldown: no new browser window until
 //   it expires, but minting is still tried first, so a manual login works.
 // - Token minting is single-flight too. On stdin EOF or SIGTERM/SIGINT/SIGHUP
 //   a running login is killed (frees port 8085); requests waiting for it get
 //   an error response and the proxy exits.
-// Requests are handled concurrently so ping/tools/list stay responsive while
+// Requests are handled concurrently so unauthenticated calls stay responsive while
 // a tool call waits for the sign-in. stdout is the MCP channel only.
 
 import { execFile, spawn } from "node:child_process";
@@ -40,8 +45,9 @@ const LOGIN_TIMEOUT_MS = 5 * 60 * 1000; // time the user gets to sign in
 const LOGIN_COOLDOWN_MS = 10 * 60 * 1000; // no new browser login after a failure
 const MANUAL_LOGIN_CMD = "gcloud auth application-default login";
 
-// Sent without a token: Stitch answers them unauthenticated (verified).
-const NO_AUTH_METHODS = new Set(["initialize", "ping", "tools/list"]);
+// The only methods sent with a token (and allowed to trigger the browser
+// login). Everything else goes out unauthenticated.
+const AUTH_METHODS = new Set(["tools/call", "resources/read"]);
 
 let cachedToken = null;
 let cachedAt = 0;
@@ -57,11 +63,6 @@ let lastLoginError = "";
 const log = (msg) => process.stderr.write(`[stitch-proxy] ${msg}\n`);
 
 const errDetail = (err) => (err.stderr || err.message || "").trim();
-
-function needsAuth(method) {
-  if (typeof method !== "string") return true;
-  return !NO_AUTH_METHODS.has(method) && !method.startsWith("notifications/");
-}
 
 // Single-flight: concurrent callers share one gcloud call and its result, so
 // one caller can't fail into the login flow while another one succeeds.
@@ -229,9 +230,7 @@ async function handle(raw, request) {
     isNotification = request.id === undefined || request.id === null;
 
     let res;
-    if (!needsAuth(request.method)) {
-      res = await post(raw, null);
-    } else {
+    if (AUTH_METHODS.has(request.method)) {
       res = await post(raw, await getToken());
 
       // Token rejected mid-session -> mint a new one and retry once.
@@ -239,6 +238,8 @@ async function handle(raw, request) {
         log(`auth ${res.status}, refreshing token and retrying`);
         res = await post(raw, await getToken(true));
       }
+    } else {
+      res = await post(raw, null);
     }
 
     const text = await res.text();
