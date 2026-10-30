@@ -12,6 +12,8 @@
  *     parse as a subshell and zsh fails on the glob
  *  5. agent-authored text written to a file via the shell (`echo x > f`, `cat > f <<EOF`,
  *     `tee f <<EOF`, `{ echo a; } > f`) outside tmp — the write/edit tools are the way
+ *  6. an `env VAR=… cmd` prefix (rules see `env`, not the command it runs)
+ *  7. a redirect with no command (`: > f`, `> f`) creating/truncating a file outside tmp
  *
  * It only ever makes a decision STRICTER (allow→ask/deny, ask→deny); it never
  * loosens config rules and never touches an incoming `deny`. Any internal error is
@@ -48,11 +50,21 @@ const MSG_FILEWRITE =
   'Write files with the write/edit tool, not via echo/printf/heredoc redirects — shell-written ' +
   'content is checked as commands (false prompts) and the user sees no diff. ' +
   'Shell writes are fine for scratch files in $TMPDIR and for real tool output (`cmd > log`).';
+const MSG_ENVPREFIX =
+  'Drop the `env VAR=…` prefix — permission rules see `env`, not the command it runs, so it is ' +
+  'asked every time. Run the command directly and pass settings with its own flags ' +
+  '(`--kubeconfig …`, `--config …`).';
+const MSG_BAREREDIRECT =
+  "A redirect with no command (`: > f`, `> f`) creates or truncates a file the rules can't see " +
+  'as a write. Create or empty files with the write tool; shell writes are fine for scratch ' +
+  'files in $TMPDIR.';
 
 // Leading words that are shell grammar, not the command itself.
 const RESERVED = new Set([
   'do', 'done', 'then', 'else', 'elif', 'if', 'fi', 'while', 'until', '!', '{', '}', 'esac', 'time',
 ]);
+// Grammar words that start a command (closers like `done`/`}`/`fi` may carry a redirect).
+const OPENERS = new Set(['do', 'then', 'else', 'elif', 'if', 'while', 'until', '!', '{', 'time']);
 // Prefix commands that run the next word.
 const WRAPPERS = new Set(['command', 'exec', 'builtin', 'nohup']);
 const SHELLS = new Set(['sh', 'bash', 'zsh', 'dash', 'ksh']);
@@ -248,7 +260,10 @@ function parse(src, depth = 0) {
     flushWord();
     pendingRedirect = null;
     pendingHeredoc = null;
-    if (cur.words.length || cur.children.length || cur.funcDef) commands.push(cur);
+    // A command may be redirects only (`> f`, `< in`): keep it so bare writes can be judged.
+    if (cur.words.length || cur.children.length || cur.funcDef || cur.redirects.length) {
+      commands.push(cur);
+    }
     cur = newCmd();
   };
   const effectiveWords = () => {
@@ -531,8 +546,67 @@ function walk(commands, state, ctx) {
       }
     }
     checkFileWrite(cmd, state, ctx, false);
+    checkBareRedirect(cmd, state, ctx);
     simple(cmd, state, ctx);
   });
+}
+
+/**
+ * Is a redirect target a real file outside tmp? `/dev/*` and unresolvable targets
+ * (unknown `$VAR`/cwd) are not (fail open).
+ * @param {Word} word redirect target / file operand
+ * @param {{cwd: string|null}} state
+ * @param {{home?: string, tmpdir?: string, tmpRoots: string[]}} ctx
+ * @returns {boolean}
+ */
+function outsideTmp(word, state, ctx) {
+  const p = resolvePath(word.text, state.cwd, ctx);
+  if (!p) return false;
+  const q = canon(p);
+  return !(q === '/dev' || q.startsWith('/dev/')) && !inTmp(q, ctx.tmpRoots);
+}
+
+/**
+ * Flag a redirect with no command (`> f`, `: > f`, `X=1 >> f`) that creates or truncates a
+ * file outside tmp. Groups (`{ …; } > f` — the `}` word) and subshells are not bare.
+ * @param {Cmd} cmd
+ * @param {{cwd: string|null}} state
+ * @param {object} ctx
+ */
+function checkBareRedirect(cmd, state, ctx) {
+  if (cmd.funcDef || cmd.children.length || !cmd.redirects.length) return;
+  let k = 0;
+  // Skip words that open a command (`do : > f`), not closers that carry a compound's
+  // redirect (`done > f`, `} > f`).
+  while (k < cmd.words.length && !cmd.words[k].quoted && OPENERS.has(cmd.words[k].text)) k++;
+  while (k < cmd.words.length && isAssign(cmd.words[k])) k++;
+  const rest = cmd.words.slice(k);
+  if (rest.length && (rest[0].quoted || rest[0].text !== ':')) return;
+  const writes = cmd.redirects.some((r) => !r.dup && /^>[>|]?$/.test(r.op) && outsideTmp(r.target, state, ctx));
+  if (writes) ctx.findings.push({ effect: 'deny', reason: 'bare-redirect', message: MSG_BAREREDIRECT });
+}
+
+/**
+ * Does `env ARGS` run a command with at least one `NAME=value` assignment?
+ * `env`, `env -u X`, `env FOO=bar` (print the environment) do not.
+ * @param {Word[]} args words after `env`
+ * @returns {boolean}
+ */
+function envRunsWithAssignment(args) {
+  let assigns = 0;
+  let options = true;
+  for (let a = 0; a < args.length; a++) {
+    const w = args[a];
+    if (options && !w.quoted && w.text === '--') { options = false; continue; }
+    if (options && !w.quoted && w.text.startsWith('-')) {
+      if (/^-[uCPS]$/.test(w.text)) a++; // option with a separate value
+      continue;
+    }
+    options = false;
+    if (isAssign(w)) { assigns++; continue; }
+    return assigns > 0; // first command word
+  }
+  return false;
 }
 
 /**
@@ -584,12 +658,7 @@ function isTextOnlyCmd(cmd) {
  */
 function checkFileWrite(cmd, state, ctx, group) {
   const { name, args } = headOf(cmd);
-  const outside = (word) => {
-    const p = resolvePath(word.text, state.cwd, ctx);
-    if (!p) return false;
-    const q = canon(p);
-    return !(q === '/dev' || q.startsWith('/dev/')) && !inTmp(q, ctx.tmpRoots);
-  };
+  const outside = (word) => outsideTmp(word, state, ctx);
   const flag = () => ctx.findings.push({ effect: 'deny', reason: 'file-write', message: MSG_FILEWRITE });
 
   if (name === 'tee' && !group) {
@@ -633,6 +702,10 @@ function simple(cmd, state, ctx) {
       reason: assigns > 0 ? 'variable-command-after-assignment' : 'variable-command',
       message: MSG_VARCMD,
     });
+    return;
+  }
+  if (!head.quoted && head.text === 'env' && envRunsWithAssignment(args)) {
+    ctx.findings.push({ effect: 'deny', reason: 'env-prefix', message: MSG_ENVPREFIX });
     return;
   }
 

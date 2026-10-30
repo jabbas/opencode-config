@@ -204,6 +204,83 @@ test('null: tool output, tmp and device redirects are not flagged', () => {
   for (const c of cases) assert.equal(eff(c), null, c);
 });
 
+test('deny: `env VAR=… cmd` prefix', () => {
+  const cases = [
+    'env HOME=$PWD/home KUBECONFIG=/nonexistent ansible-playbook site.yaml',
+    'env DOCKER_CONFIG=$TMPDIR/anon cosign verify x',
+    'env -i PATH=/usr/bin ls',
+    'env -u FOO BAR=1 make test',
+    'env -- X=1 make',
+    'X=1 env Y=2 make',
+    'nohup env X=1 sleep 5',
+    'cd x && env A=b npm test',
+    'echo "$(env X=1 date)"',
+    'for f in a b; do env N=$f make; done',
+  ];
+  for (const c of cases) assert.equal(eff(c), 'deny', c);
+  assert.match(analyze(cases[0], base).message, /`env VAR=…` prefix/);
+});
+
+test('null: env / printenv without a prefixed command', () => {
+  const cases = [
+    'env',
+    'env | grep ^XDG',
+    'env | sort',
+    'env -0',
+    'env -u FOO',
+    'env FOO=bar',
+    'printenv',
+    'printenv HOME',
+    'X=1 make',
+    'echo env X=1 make',
+    "grep 'env X=1 cmd' f",
+    `cat <<'EOF'\nenv X=1 make\nEOF`,
+  ];
+  for (const c of cases) assert.equal(eff(c), null, c);
+});
+
+test('deny: bare redirections with no command', () => {
+  const cases = [
+    ': > A.log',
+    ':> A.log',
+    ': >> notes.txt',
+    '>file',
+    '> out.txt',
+    '>> out.txt',
+    '>| out.txt',
+    'ls; > out.txt',
+    'cd /Users/x/Projects/q && : > a.md',
+    'for n in a b; do : > out.txt; done',
+  ];
+  for (const c of cases) assert.equal(eff(c), 'deny', c);
+  assert.match(analyze(': > A.log', base).message, /redirect with no command/);
+});
+
+test('null: bare redirects to tmp/dev, input redirects and redirects after a real command', () => {
+  const cases = [
+    ': > $TMPDIR/a.log',
+    '> /dev/null',
+    ': > /tmp/x',
+    '< in.txt',
+    'cargo test > log.txt',
+    'git diff > x.patch',
+    'make 2>&1 > build.log',
+    'ls > out.txt',
+    ': > $UNKNOWN/a', // unresolvable target: fail open
+    'cd "$DIR" && : > a', // unknown cwd
+    ':',
+    ': "comment"',
+    'true',
+    'echo ": > f"',
+    'for f in a b; do ls $f; done > out.txt',
+    'if true; then ls; fi > out.txt',
+    'while read l; do echo "$l"; done < in.txt',
+    '{ ls; date; } > f.txt',
+    '( ls ) > f.txt',
+  ];
+  for (const c of cases) assert.equal(eff(c), null, c);
+});
+
 test('analyze is robust to odd input', () => {
   for (const c of ['"unterminated', "'x", '$(', '`', '((', 'a() ', '<<', 'cat <<EOF', '${', 'echo $((1+2))']) {
     assert.doesNotThrow(() => analyze(c, base), c);
@@ -252,6 +329,16 @@ test('wiring: allow -> ask for tmp script, ask stays ask', async () => {
   assert.equal(ev.effect, 'ask');
   assert.match(ev.message, /^shell-style: This runs a script/);
   assert.equal((await run(h, 'c4', 'sh /tmp/x.sh', 'ask')).effect, 'ask');
+});
+
+test('wiring: env prefix and bare redirect -> deny with prefixed message', async () => {
+  const h = await setupPlugin();
+  const ev = await run(h, 'c13', 'env HOME=$PWD/home make', 'allow');
+  assert.equal(ev.effect, 'deny');
+  assert.match(ev.message, /^shell-style: Drop the `env VAR=…` prefix/);
+  const ev2 = await run(h, 'c14', ': > A.log', 'ask');
+  assert.equal(ev2.effect, 'deny');
+  assert.match(ev2.message, /^shell-style: A redirect with no command/);
 });
 
 test('wiring: incoming deny is never changed', async () => {
