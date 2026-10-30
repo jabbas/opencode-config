@@ -1854,7 +1854,9 @@
         "websearch": false,
         "opencode_session_rename": false,
         "opencode_session_move": false,
-        "opencode_worktree_create": false
+        "opencode_worktree_create": false,
+        "opencode_list_mcp_resources": false,
+        "opencode_read_mcp_resource": false
       },
       "permission": {
         "task": {
