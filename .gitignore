@@ -18,6 +18,8 @@ session-*.md
 # Per-machine config layer (auto-merged on top of opencode.json).
 # Usually a symlink to one of the per-machine variants below.
 opencode.jsonc
+# Per-machine .jsonc variants (opencode.jsonc.kimi, ...)
+opencode.jsonc.*
 
 # Per-machine variants (opencode.kilocode.json, opencode.anthropic.json, ...)
 # and the legacy opencode.local.json. Does NOT match opencode.json itself.
