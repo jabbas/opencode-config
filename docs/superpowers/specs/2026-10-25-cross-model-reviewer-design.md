@@ -76,8 +76,9 @@ przepuściło. To jest zmiana kosztowo-architektoniczna, nie gaszenie pożaru.
    lokalnym `skill/autonomous-execution/SKILL.md`.
 6. **Dispatch do `@reviewer` bez parametru `model`** — model wynika z konfiguracji
    agenta na danej maszynie.
-7. **Awaria modelu reviewera → fallback na `@general` (Anthropic) z jawnym wpisem**
-   w ledgerze/raporcie; praca idzie dalej (szczegóły §5.3).
+7. **Awaria modelu reviewera → fallback na Anthropic z jawnym wpisem**
+   w ledgerze/raporcie; praca idzie dalej (szczegóły §5.3). *Zmiana 2026-10-31
+   (decyzja użytkownika): fallback = `@reviewer` z parametrem `model`, nie `@general`.*
 
 ## 5. Projekt
 
@@ -176,11 +177,19 @@ cfg -> reviewer: agent.reviewer.model {style.stroke-dash: 3}
 - **Awaria modelu reviewera w trakcie pracy** (wyczerpany limit, rate limit,
   dostawca niedostępny, błąd dispatchu `@reviewer`) → **fallback na Anthropic z
   jawnym wpisem** *(decyzja użytkownika)*: koordynator powtarza ten sam dispatch
-  review na `@general` (model wg SDD Model Selection) i zapisuje to w ledgerze SDD
-  jako `Ruling: review <etap/task N> on @general — reviewer model unavailable
-  (<błąd>) — same-family review` oraz w raporcie końcowym (sekcja „Rulings I made”
-  w SDD / raport audytu autopilota). Bez retry, bez zatrzymywania pracy. Fallback
-  dotyczy pojedynczego dispatchu — następne review znowu próbuje `@reviewer`.
+  review na `@reviewer` **z parametrem `model`** (model wg SDD Model Selection) i
+  zapisuje to w ledgerze SDD jako `Ruling: review <etap/task N> on @reviewer with
+  model <id> — reviewer model unavailable (<błąd>) — same-family review` oraz w
+  raporcie końcowym (sekcja „Rulings I made” w SDD / raport audytu autopilota). Bez
+  retry, bez zatrzymywania pracy. Fallback dotyczy pojedynczego dispatchu — następne
+  review znowu idzie do `@reviewer` bez `model`.
+  *Zmiana 2026-10-31 (decyzja użytkownika):* pierwotnie fallback szedł na `@general`.
+  Pierwsze prawdziwe użycie (homebudget, limit 5h Kimi) pokazało, że wtedy review
+  działa z pełnym edit i shellem. Parametr `model` nadpisuje `agent.reviewer.model`
+  (sprawdzone: sesja `ses_e6c55d90cffe6lzQoFUxKY3MCv`, agent=reviewer,
+  model=anthropic/claude-sonnet-5-5, raport z linią `Model:`), więc fallback zachowuje
+  piaskownicę read-only i prompt reviewera. Jawny `model` przy fallbacku nie jest
+  anty-celem z §3 — nie jest cichy, bo towarzyszy mu Ruling.
 - **Jeden poziom review.** `@reviewer` świadomie zastępuje tiering z SDD dla
   review (najmocniejszy model na final, tańszy na re-review) — wszystkie review
   idą na jeden model per maszyna. Na prywatnej to subskrypcja, więc koszt per
@@ -191,7 +200,8 @@ cfg -> reviewer: agent.reviewer.model {style.stroke-dash: 3}
 
 **`skill/autonomous-execution/SKILL.md`**:
 - Krok 5 VERIFY: `@debugger` / `@coder` → `@reviewer` (bez parametru `model`);
-  przy awarii modelu reviewera fallback na `@general` z wpisem w raporcie audytu
+  przy awarii modelu reviewera fallback na `@reviewer` z `model` (od 2026-10-31;
+  wcześniej `@general`) z wpisem w raporcie audytu
   (jak w regule `AGENTS.md`).
 - Lista specjalistów w kroku 4 (linia „Available specialists”): dodać `@reviewer`.
 
@@ -228,8 +238,10 @@ modelu domyślnym (`anthropic/claude-sonnet-5-5`), bez WARN/ERROR w logu. Fallba
 - Błędny id modelu (tymczasowo w `opencode.jsonc`, zweryfikowane 2026-10-28):
   dispatch `@reviewer` **kończy się sukcesem** na modelu domyślnym; linia `Model:`
   raportu pokazuje rodzinę domyślną → koordynator zapisuje Ruling „reviewer model not
-  applied” (§5.4); przywrócić poprawny id po teście. Fallback na `@general` przy
-  prawdziwym błędzie dostawcy (limit, rate limit, awaria) — **nieprzetestowany**.
+  applied” (§5.4); przywrócić poprawny id po teście. Fallback przy prawdziwym błędzie
+  dostawcy — zaobserwowany 2026-10-31 (limit 5h Kimi, `provider.quota` 429, wtedy
+  jeszcze na `@general`); nadpisanie modelu `@reviewer` parametrem `model`
+  zweryfikowane tego samego dnia.
 - Krótki run SDD na małym planie (lub ręczny dispatch szablonu task review) →
   raport w formacie szablonu, z modelu Kimi.
 - Kontrola konfiguracji po ustawieniu/zmianie `agent.reviewer.model` (README,
@@ -248,6 +260,35 @@ modelu domyślnym (`anthropic/claude-sonnet-5-5`), bez WARN/ERROR w logu. Fallba
 - **Plugin przepisujący model w locie** (wykrywanie dispatchu review po treści
   promptu) — kruche, nieczytelne.
 - **Zmiana szablonów w submodule `superpowers/`** — nadpisywane przy aktualizacji.
+- **Plugin `model-fallback` — model zapasowy per agent w konfiguracji** *(pomysł
+  użytkownika 2026-10-31, odłożony; do brainstormingu)*. Cel: koordynator w ogóle
+  nie zna modeli — fallback (dziś „`@reviewer` + `model` wg SDD”, §5.3) wynika z
+  konfiguracji maszyny, dla dowolnego agenta. Różni się od odrzuconego punktu wyżej:
+  dopasowanie po nazwie agenta i błędzie dostawcy, nie po treści promptu.
+  Ustalenia z kodu OpenCode v2.2.0 (`~/Projects/opencode`, commit 97fd7acc41):
+  - Natywnego pola fallback nie ma.
+  - Własny klucz w `agent.<name>` odpada: nieznane klucze trafiają do `options`
+    (`core/src/v1/config/agent.ts:45-49`), a stamtąd do `request.body` każdego
+    zapytania do API (`v1/config/migrate.ts:35-43`, `session/model-request.ts:284`).
+  - Hooki `session.model.request` (tylko baseURL/nagłówki, `model-request.ts:313-328`)
+    i `session.retry` (tylko decyzja retry/delay) modelu nie zmienią.
+  - Działa: `tool.execute.before` na narzędziu `subagent` może dopisać `input.model`
+    — tak robi sam OpenCode w `core/src/tool/plugin/subagent.ts:271-280`. Override
+    `model` wygrywa z `agent.<name>.model` (zweryfikowane: sesja
+    `ses_e6c55d90cffe6lzQoFUxKY3MCv`).
+  - Konfiguracja: opcje pluginu (`v1/config/plugin.ts:8`, krotka `[spec, options]`)
+    w `opencode.jsonc`, np. `["./plugins/model-fallback.js", {"reviewer":
+    "anthropic/claude-sonnet-5-5"}]`.
+  Szkic: plugin zauważa błąd dostawcy w podsesji agenta (`provider.quota`, rate
+  limit) i oznacza dostawcę jako niedostępnego; przy ponownym dispatchu tego agenta
+  bez `model` wstawia model zapasowy. Reguła w `AGENTS.md` upraszcza się do „po
+  błędzie dostawcy wyślij tego samego agenta raz jeszcze, bez `model`”.
+  Otwarte: czy tablica `plugin` z `opencode.jsonc` dokleja się do tej z
+  `opencode.json`, czy ją zastępuje; skąd plugin wie o błędzie podsesji (event vs
+  `execute.after`); TTL niedostępności (komunikat Kimi nie podaje czasu resetu);
+  gdzie zapisać Ruling i jak to gra z kontrolą linii `Model:` (§5.4).
+  Kontekst: pierwszy prawdziwy fallback 2026-10-31 (homebudget, limit 5h Kimi,
+  sesja `ses_e713e4391ffeHdBNiQguWB4kCA`).
 
 ## 8. Pozostawione builderowi
 

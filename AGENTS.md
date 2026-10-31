@@ -136,7 +136,8 @@ These apply to every agent (this file is injected globally via `Instruction.syst
   autopilot's independent verification — goes to `@reviewer`, never to
   `general`/`coder`/`debugger`. Where a superpowers template says
   "Subagent (general-purpose)" for a review, read it as `@reviewer`.
-  - **Never pass `model`** when dispatching `@reviewer`, even though SDD templates
+  - **Never pass `model`** when dispatching `@reviewer` (sole exception: the
+    Fallback below), even though SDD templates
     carry `model: [MODEL — REQUIRED]` — the reviewer's model comes from the
     machine's `opencode.jsonc`. SDD Model Selection still applies to implementers;
     for reviews, `@reviewer` deliberately replaces SDD's tiering (one model per machine).
@@ -144,11 +145,13 @@ These apply to every agent (this file is injected globally via `Instruction.syst
     (`external_directory: deny`). When work happens in a worktree, dispatch the
     review from a session moved into that worktree.
   - **Fallback:** if the `@reviewer` dispatch fails because its model is unavailable
-    (quota, rate limit, provider down), re-run that same review once on `@general`
-    (this dispatch does pass `model`, per SDD Model Selection) and record
-    `Ruling: review <stage/task N> on @general — reviewer model unavailable
-    (<error>) — same-family review` in the SDD ledger / autopilot audit report.
-    No retries, no stop; the next review tries `@reviewer` again.
+    (quota, rate limit, provider down), re-run that same review once on `@reviewer`
+    **with `model`** (per SDD Model Selection) — the `model` parameter overrides
+    `agent.reviewer.model` while keeping the reviewer's read-only sandbox and prompt.
+    Never fall back to `@general` (full edit + shell). Record
+    `Ruling: review <stage/task N> on @reviewer with model <id> — reviewer model
+    unavailable (<error>) — same-family review` in the SDD ledger / autopilot audit
+    report. No retries, no stop; the next review tries `@reviewer` without `model` again.
   - **Verify the reviewer's model** (a wrong/retired id in `opencode.jsonc` silently
     falls back to the default model, no error): read the report's `Model:` line; if it
     is missing/`unknown` or the implementer's family (compare family, not provider —
