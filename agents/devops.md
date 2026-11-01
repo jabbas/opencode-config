@@ -39,12 +39,12 @@ Zen in this role (adds to docs/design-principles.md, never replaces it):
 
 - No hidden defaults: set chart and image versions explicitly (never missing, never
   `latest`). Explicit ranges (e.g. `1.x`) and Flux image automation are fine — do not
-  rewrite working explicit setups.
+  rewrite working explicit setups. A wildcard range such as `*` counts as `latest`.
 - Keep Kustomize overlays shallow.
 - No `|| true`, `continue-on-error`, or `failurePolicy: Ignore` without a comment
   explaining why.
-- In scripts and pipelines, use long flags and full resource names (`--namespace`,
-  `kustomization`).
+- The long-flag and full-name rule covers Helm values, Flux manifests, and GitHub
+  Actions steps; one-off interactive commands may keep the short forms shown above.
 
 Delegate to specialist agents:
 - @webdebugger — for browser testing and UI verification of deployed services

@@ -2,10 +2,11 @@
 
 - Data: 2026-11-01
 - Autor decyzji: Grzegorz (użytkownik), ustalone w sesji burzy mózgów
-- Status: do zatwierdzenia przez użytkownika
+- Status: zatwierdzone przez użytkownika 2026-11-01; wdrożone (commity `975f862`, `2c31a22` oraz poprawki z sekcji 9)
 - Język: dokument dla użytkownika po polsku; wszystkie zmieniane pliki w repozytorium pozostają po angielsku
 
-Oznaczenia „D1”–„D7” w tym dokumencie to numery decyzji (Decyzja 1 … Decyzja 7).
+Oznaczenia „D1”–„D7” w tym dokumencie to numery decyzji (Decyzja 1 … Decyzja 7),
+a „A1”–„A4” to decyzje architekta z sekcji 8.
 Zapis „#10” oznacza aforyzm numer 10 z ponumerowanej listy Zen of Python (patrz D3).
 
 ## 1. Cel i uzasadnienie
@@ -179,13 +180,13 @@ sesję i potwierdzić, że `docs/design-principles.md` nadal jest ładowany.
 | `agents/devops.md` | blok roli (D7) |
 | `AGENTS.md` | tylko jeśli opis „Design Principles” przestanie być dokładny |
 
-## 8. Decyzje architekta (do sprawdzenia przez użytkownika)
+## 8. Decyzje architekta (zatwierdzone przez użytkownika razem ze specyfikacją)
 
 Pytania z niezależnego przeglądu specyfikacji, rozstrzygnięte przez architekta, a nie
 przez użytkownika:
 
 - **A1. „Przypięte wersje” u `@devops`** oznaczają zakaz *ukrytych* wartości
-  domyślnych: brak wersji albo `latest`. Jawne zakresy wersji (np. `1.x` w HelmRelease)
+  domyślnych: brak wersji albo `latest`. Jawne zakresy wersji (na przykład `1.x` w HelmRelease)
   i automatyczne aktualizacje obrazów przez Flux (ImageAutomation) są dozwolone, bo są
   jawne (#2). Agent nie przepisuje działających konfiguracji z jawnymi zakresami.
 - **A2. Gdzie zapisywać dług („Now, but not half-baked”):** w raporcie końcowym agenta
@@ -196,7 +197,29 @@ przez użytkownika:
   i formacie, a minimalna waga z D7 obowiązuje w skali szablonu. Wyciszenie błędu musi
   być jawne *w kodzie* (komentarz, #11). Zgoda w planie nie zastępuje komentarza,
   bo jego dodanie nic nie kosztuje. Jeśli szablon nie ma skali Critical/Important/Minor
-  (np. niezależna weryfikacja autopilota), recenzent oznacza takie ustalenie słowami
-  jako blokujące.
+  (na przykład niezależna weryfikacja autopilota), recenzent oznacza takie ustalenie
+  słowami jako blokujące.
 - **A4. Budżet wierszy** jest orientacyjny. Znaczenie z D6 wygrywa z liczbą wierszy
   (patrz „Budżet” w D6).
+
+## 9. Poprawki po przeglądzie końcowym
+
+Niezależny przegląd całości (`@reviewer`) uznał zmianę za gotową po poprawkach.
+Wprowadzone doprecyzowania (znaczenie D6/D7 bez zmian, tylko węższe i jaśniejsze
+brzmienie):
+
+- **`@reviewer`:** zwolnienie „odstępstwo uzasadnione komentarzem” dotyczy wyłącznie
+  odstępstw od zasad Zen, i tylko gdy komentarz podaje rzeczywisty powód. Nigdy nie
+  usprawiedliwia odstępstwa od specyfikacji, planu ani wymagań zadania.
+- **`@coder`:** zwrócenie `None` lub pustej wartości jest dozwolone, gdy brak wyniku
+  jest prawidłowym wynikiem (nie awarią); przy błędzie najpierw test, który go odtwarza
+  (zamiast powtarzać wspólną regułę „znajdź przyczynę”, D2).
+- **`@devops`:** punkt o długich flagach nie powtarza już wspólnego pliku (D2), tylko
+  wskazuje, gdzie obowiązuje (wartości Helma, manifesty Flux, kroki GitHub Actions)
+  i że jednorazowe polecenia interaktywne mogą używać krótkich form; zakres
+  z symbolem wieloznacznym (`*`) liczy się jak `latest` (doprecyzowanie A1).
+- **Wspólny plik, dług (A2):** dług w dokumencie specyfikacji lub planu zapisuje ten,
+  kto jest jego właścicielem (zwykle koordynator), a nie każdy agent — recenzent jest
+  tylko do odczytu, a wykonawca nie edytuje cudzego planu.
+- Świadomie pominięte: skrót „e.g.” w tekstach przeznaczonych dla agentów (nie dla
+  użytkownika) zostaje — reguła „No abbreviations” część *to the user* ich nie obejmuje.

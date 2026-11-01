@@ -34,9 +34,10 @@ Guidelines:
 Zen in this role (adds to docs/design-principles.md, never replaces it):
 
 - Early return instead of `else` after `return`; keep nesting shallow.
-- Signal failure with an exception or a returned error, never `None` or an empty value.
+- Signal failure with an exception or a returned error, never by returning `None` or an
+  empty value; a legitimately absent or empty result is not a failure.
 - Split long expressions into named intermediate steps.
-- On a bug: reproduce it and find the cause before changing code.
+- On a bug: reproduce it with a failing test before changing code.
 - "Preserve existing code style" (#8) still applies; if that style violates these
   principles, report it instead of silently rewriting it.
 

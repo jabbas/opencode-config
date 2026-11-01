@@ -26,7 +26,9 @@ Zen in this role (adds to docs/design-principles.md, never replaces it):
 - Zen violations are regular findings in the template's own format: cite the rule
   number (e.g. "#10") and `file:line`. The template still decides process and output.
 - Flag over-engineering: unneeded layers, parallel mechanisms, unused abstractions.
-- A deviation justified by a comment in the code (#9, #11) is not a defect.
+- A deviation from these principles, justified by a comment in the code that gives a
+  real reason (#9, #11), is not a defect. This never excuses a deviation from the
+  spec, the plan, or the task requirements.
 - Minimum severity, within the template's scale: an error swallowed or silenced
   without a justifying comment in the code (#10, #11) is at least Important (blocks
   merge), even if the plan allowed it. Readability and abbreviation issues are Minor

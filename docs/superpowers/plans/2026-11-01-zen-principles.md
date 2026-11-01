@@ -34,7 +34,7 @@
 ### Task 1: Shared principles file
 
 **Files:**
-- Modify: `docs/design-principles.md:14-47` (sections "The Zen of Python (PEP 20)" and "How Agents Apply This")
+- Modify: `docs/design-principles.md:14-47` (sections "The Zen of Python (PEP 20)" — PEP 20 is Python Enhancement Proposal 20 — and "How Agents Apply This")
 - Also commit: `docs/superpowers/specs/2026-11-01-zen-principles-design.md`, `docs/superpowers/plans/2026-11-01-zen-principles.md` (written by the architect, not yet committed)
 
 **Interfaces:**
@@ -54,7 +54,8 @@
   explicit and carries a comment explaining why.
 - **Now, but not half-baked (#15, #16).** Don't postpone indefinitely, but don't ship
   something unfinished just to have it now. Anything deliberately left out is listed
-  explicitly as debt — in your final report, and in the spec or plan the work came from.
+  explicitly as debt — in your final report; whoever owns the spec or plan the work
+  came from (usually the coordinator) also records it there.
 - **Subtract before adding.** Prefer deleting or simplifying an existing mechanism
   over introducing a new one.
 - **One obvious way (#13).** Do not create parallel mechanisms that do the same thing.
@@ -129,9 +130,10 @@ Each block starts with the same heading line, then a blank line, then its bullet
 
 ```markdown
 - Early return instead of `else` after `return`; keep nesting shallow.
-- Signal failure with an exception or a returned error, never `None` or an empty value.
+- Signal failure with an exception or a returned error, never by returning `None` or an
+  empty value; a legitimately absent or empty result is not a failure.
 - Split long expressions into named intermediate steps.
-- On a bug: reproduce it and find the cause before changing code.
+- On a bug: reproduce it with a failing test before changing code.
 - "Preserve existing code style" (#8) still applies; if that style violates these
   principles, report it instead of silently rewriting it.
 ```
@@ -142,7 +144,9 @@ Each block starts with the same heading line, then a blank line, then its bullet
 - Zen violations are regular findings in the template's own format: cite the rule
   number (e.g. "#10") and `file:line`. The template still decides process and output.
 - Flag over-engineering: unneeded layers, parallel mechanisms, unused abstractions.
-- A deviation justified by a comment in the code (#9, #11) is not a defect.
+- A deviation from these principles, justified by a comment in the code that gives a
+  real reason (#9, #11), is not a defect. This never excuses a deviation from the
+  spec, the plan, or the task requirements.
 - Minimum severity, within the template's scale: an error swallowed or silenced
   without a justifying comment in the code (#10, #11) is at least Important (blocks
   merge), even if the plan allowed it. Readability and abbreviation issues are Minor
@@ -155,12 +159,12 @@ Each block starts with the same heading line, then a blank line, then its bullet
 ```markdown
 - No hidden defaults: set chart and image versions explicitly (never missing, never
   `latest`). Explicit ranges (e.g. `1.x`) and Flux image automation are fine — do not
-  rewrite working explicit setups.
+  rewrite working explicit setups. A wildcard range such as `*` counts as `latest`.
 - Keep Kustomize overlays shallow.
 - No `|| true`, `continue-on-error`, or `failurePolicy: Ignore` without a comment
   explaining why.
-- In scripts and pipelines, use long flags and full resource names (`--namespace`,
-  `kustomization`).
+- The long-flag and full-name rule covers Helm values, Flux manifests, and GitHub
+  Actions steps; one-off interactive commands may keep the short forms shown above.
 ```
 
 - [ ] **Step 5: Verify**

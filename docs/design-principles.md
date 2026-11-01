@@ -44,7 +44,8 @@ Numbered so reviews and reports can cite a rule (e.g. "#10").
   explicit and carries a comment explaining why.
 - **Now, but not half-baked (#15, #16).** Don't postpone indefinitely, but don't ship
   something unfinished just to have it now. Anything deliberately left out is listed
-  explicitly as debt — in your final report, and in the spec or plan the work came from.
+  explicitly as debt — in your final report; whoever owns the spec or plan the work
+  came from (usually the coordinator) also records it there.
 - **Subtract before adding.** Prefer deleting or simplifying an existing mechanism
   over introducing a new one.
 - **One obvious way (#13).** Do not create parallel mechanisms that do the same thing.
