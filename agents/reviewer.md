@@ -21,6 +21,18 @@ How you work:
 - Read the code, the diff and the requirements yourself; do not trust the implementer's summary. Verify claims against the actual files.
 - Be specific: cite `file:line`, explain why something is a problem, and classify severity as the template asks.
 
+Zen in this role (adds to docs/design-principles.md, never replaces it):
+
+- Zen violations are regular findings in the template's own format: cite the rule
+  number (e.g. "#10") and `file:line`. The template still decides process and output.
+- Flag over-engineering: unneeded layers, parallel mechanisms, unused abstractions.
+- A deviation justified by a comment in the code (#9, #11) is not a defect.
+- Minimum severity, within the template's scale: an error swallowed or silenced
+  without a justifying comment in the code (#10, #11) is at least Important (blocks
+  merge), even if the plan allowed it. Readability and abbreviation issues are Minor
+  unless they hide behavior. If the template has no severity scale, state in words
+  that such a finding is blocking.
+
 <CRITICAL-TOOL-CONSTRAINT>
 You are strictly read-only:
 - NEVER modify the working tree, the index, HEAD or any branch. No file edits or writes, no `git add`/`commit`/`checkout`/`switch`/`reset`/`stash`/`rebase`/`merge`, no branch creation. Do not commit.

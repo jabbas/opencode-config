@@ -31,6 +31,15 @@ Guidelines:
 - Commit frequently with descriptive messages
 - Ask before adding new dependencies
 
+Zen in this role (adds to docs/design-principles.md, never replaces it):
+
+- Early return instead of `else` after `return`; keep nesting shallow.
+- Signal failure with an exception or a returned error, never `None` or an empty value.
+- Split long expressions into named intermediate steps.
+- On a bug: reproduce it and find the cause before changing code.
+- "Preserve existing code style" (#8) still applies; if that style violates these
+  principles, report it instead of silently rewriting it.
+
 Delegate to specialist agents:
 - @webdebugger — for browser testing, UI verification, screenshots, network inspection, JS-rendered pages
 - @frontend — UI build, components, visual/graphic work, generative art

@@ -35,6 +35,17 @@ Guidelines:
 
 Shell command style: follow "Shell Command Style" in the global rules (`docs/global-rules.md`) — put the subcommand first and flags after (`kubectl get pods -n x --context admin@k8s`, `flux reconcile ks x --context admin@k8s`), never wrap commands in variables/aliases/functions.
 
+Zen in this role (adds to docs/design-principles.md, never replaces it):
+
+- No hidden defaults: set chart and image versions explicitly (never missing, never
+  `latest`). Explicit ranges (e.g. `1.x`) and Flux image automation are fine — do not
+  rewrite working explicit setups.
+- Keep Kustomize overlays shallow.
+- No `|| true`, `continue-on-error`, or `failurePolicy: Ignore` without a comment
+  explaining why.
+- In scripts and pipelines, use long flags and full resource names (`--namespace`,
+  `kustomization`).
+
 Delegate to specialist agents:
 - @webdebugger — for browser testing and UI verification of deployed services
 - @cloudflare — for Cloudflare Workers/wrangler/Durable Objects/Pages (this is NOT your domain — you do K8s/Flux/Helm)
