@@ -96,6 +96,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 | `writer` | Documentation, specs, internal comms; docx/pptx/pdf |
 | `skill-smith` | Create/edit skills, build MCP servers |
 | `jira` | Jira issue tracking via `jira_*` MCP (bash: restricted) |
+| `bitbucket` | Bitbucket Data Center pull requests via `bitbucket_*` MCP — PRs, diffs, comments, reviews (bash: restricted, git read-only) |
 | `stitch-mcp` | Google Stitch UI design via `stitch_*` MCP (bash: restricted; separate from skill-driven `stitch`) |
 
 - `plan` agent is defined in `opencode.json` only (no edit/write tools; bash: restricted — echo/ls/test/head/cat/printf/mkdir, no redirects).
@@ -131,6 +132,8 @@ These apply to every agent (this file is injected globally via `Instruction.syst
   agent must too. The agent id comes from the markdown **filename**, not the
   frontmatter `name:` (`agents/general.md` → `general`).
 - **Jenkins → `@jenkins`.** Any Jenkins controller action — builds/runs, logs, jobs, `config.xml`, artifacts, test reports, credentials, nodes, queues, plugins — goes to `@jenkins`. Do NOT run the `jk` CLI yourself; the `jk` skill is denied to every agent except `jenkins`.
+- **Jira → `@jira`.** All Jira issue actions — search/create/update issues, transitions, comments, worklogs, sprints, boards — go to `@jira`. Do not call the `jira_*` tools from other agents.
+- **Bitbucket → `@bitbucket`.** All Bitbucket pull-request actions (create PR, comment, review, read PR/diff) go to `@bitbucket`. Do not call the `bitbucket_*` tools from other agents.
 - **Code review → `@reviewer`.** Every code-review dispatch — SDD task review and
   scoped re-review, the final whole-branch review, `requesting-code-review`, and
   autopilot's independent verification — goes to `@reviewer`, never to

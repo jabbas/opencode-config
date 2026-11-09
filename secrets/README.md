@@ -13,6 +13,8 @@ This directory contains API keys and tokens referenced by `opencode.json` via `{
 | `firecrawl.key` | Firecrawl MCP API key |
 | `jira.url` | Jira base URL for the Atlassian MCP (infrastructure — treated as secret) |
 | `jira.token` | Jira personal access token (`--jira-personal-token`) |
+| `bitbucket.url` | Bitbucket Data Center host for the MCP (no scheme, e.g. central-bitbucket.novomatic-tech.com) |
+| `bitbucket.token` | Bitbucket DC HTTP access token (`BITBUCKET_API_TOKEN`) |
 | `stitch.key` | Google Stitch MCP API key |
 | `alibaba-cloud.key` | Alibaba Cloud API key |
 | `grafana-dev.token` | Grafana service-account token for dev (46-char `glsa_…`, read-only Viewer SA) |
@@ -31,9 +33,17 @@ printf '%s' 'https://firecrawl.example.internal'   > secrets/firecrawl.url
 printf '%s' 'your-firecrawl-key-here'              > secrets/firecrawl.key
 printf '%s' 'https://jira.example.internal'        > secrets/jira.url
 printf '%s' 'your-jira-token-here'                 > secrets/jira.token
+printf '%s' 'central-bitbucket.novomatic-tech.com' > secrets/bitbucket.url
+printf '%s' 'your-bitbucket-http-access-token'     > secrets/bitbucket.token
 printf '%s' 'your-stitch-key-here'                 > secrets/stitch.key
 printf '%s' 'your-key-here'                        > secrets/alibaba-cloud.key
 ```
+
+**`bitbucket.url` / `bitbucket.token` are only needed on machines that use the work
+Bitbucket** — the `bitbucket` MCP server itself lives in the per-machine
+`opencode.jsonc` (OpenCode v2 aborts the whole config load on a missing `{file:…}`
+reference, same reason as the `grafana-*` servers). `bitbucket.url` is the bare host,
+without a scheme.
 
 ### Grafana service-account tokens (dev/test/stage)
 

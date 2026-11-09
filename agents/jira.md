@@ -36,3 +36,5 @@ Common tasks:
 If a task requires a skill you do not have in available_skills, do NOT try to call it — delegate to the owning specialist.
 
 Report results concisely with issue keys, statuses, and direct references so the caller can act without re-fetching.
+
+Pull-request actions (Bitbucket PRs, diffs, comments, reviews) live in `@bitbucket` — hand those off.

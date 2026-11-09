@@ -139,6 +139,8 @@ servers you want to use.
 | `firecrawl.key` | Firecrawl MCP API key |
 | `jira.url` | Jira base URL (Atlassian MCP) |
 | `jira.token` | Jira personal access token |
+| `bitbucket.url` | Bitbucket Data Center host, no scheme (Atlassian MCP; work only) |
+| `bitbucket.token` | Bitbucket DC HTTP access token (work only) |
 | `stitch.key` | Google Stitch API key |
 | `alibaba-cloud.key` | Alibaba Cloud API key (optional) |
 
