@@ -10,8 +10,8 @@
     "reserved": 10000
   },
   "plugin": [
-    "@andrzejchm/opencode-anthropic-auth@2.3.0",
-    "github:jabbas/opencode-kilo-gateway#bc9b8598d21f8c116c13b9d5406c8039e99806ac"
+    "@andrzejchm/opencode-anthropic-auth@2.5.0",
+    "@dragenetlabs/opencode-kilo-gateway@0.2.1"
   ],
   "permission": {
     "read": {
