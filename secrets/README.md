@@ -41,14 +41,15 @@ printf '%s' 'your-key-here'                        > secrets/alibaba-cloud.key
 
 **`bitbucket.url` / `bitbucket.token` are only needed on machines that use the work
 Bitbucket** — the `bitbucket` MCP server itself lives in the per-machine
-`opencode.jsonc` (OpenCode v2 aborts the whole config load on a missing `{file:…}`
-reference, same reason as the `grafana-*` servers). `bitbucket.url` is the bare host,
-without a scheme.
+`opencode.jsonc` (same reason as the `grafana-*` servers: the shared file would
+otherwise spawn a server that cannot authenticate on every other machine and would
+carry an internal hostname). `bitbucket.url` is the bare host, without a scheme.
 
 **`jira.url` / `jira.token` are only needed on machines whose `opencode.jsonc` defines
 the `jira` MCP server** — the server itself lives in the per-machine `opencode.jsonc`
-(same reason as the `grafana-*` servers: OpenCode v2 aborts the whole config load on a
-missing `{file:…}` reference).
+(same reason as the `grafana-*` servers: the shared file would otherwise spawn a
+server that cannot authenticate on every other machine and would carry an internal
+hostname).
 
 ### Grafana service-account tokens (dev/test/stage)
 
@@ -81,11 +82,12 @@ consuming it via the `GRAFANA_SERVICE_ACCOUNT_TOKEN` env var. It is outside ever
 git repo, so it can never be committed.
 
 **The `grafana-*` MCP servers are work-machine-only and live in the per-machine
-`opencode.jsonc`, NOT in the shared `opencode.json`.** OpenCode v2 fails the whole
-config load (`ConfigInvalidError`) when a `{file:…}` reference is missing, so a
-shared entry pointing at `~/.config/mcp-secrets/` broke every machine without those
-tokens. The shared `opencode.json` keeps only the tool gating (`grafana-*_*: false`
-globally, `true` on `debugger`), which is harmless where the servers don't exist.
+`opencode.jsonc`, NOT in the shared `opencode.json`.** A missing `{file:…}` reference
+does not abort the config load — OpenCode substitutes an empty string and only logs a
+warning — but a shared entry would still spawn servers that cannot authenticate on
+every other machine and would carry internal hostnames into the shared file. The
+shared `opencode.json` keeps only the tool gating (`grafana-*_*: false` globally,
+`true` on `debugger`), which is harmless where the servers don't exist.
 
 Work machine — merge this into `opencode.jsonc` (deep-merged over `opencode.json`):
 
