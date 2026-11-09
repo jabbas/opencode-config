@@ -137,8 +137,8 @@ servers you want to use.
 | `homeassistant.url` | Home Assistant MCP endpoint URL |
 | `firecrawl.url` | Firecrawl MCP base URL |
 | `firecrawl.key` | Firecrawl MCP API key |
-| `jira.url` | Jira base URL (Atlassian MCP) |
-| `jira.token` | Jira personal access token |
+| `jira.url` | Jira base URL (Atlassian MCP; work only) |
+| `jira.token` | Jira personal access token (work only) |
 | `bitbucket.url` | Bitbucket Data Center host, no scheme (Atlassian MCP; work only) |
 | `bitbucket.token` | Bitbucket DC HTTP access token (work only) |
 | `stitch.key` | Google Stitch API key |

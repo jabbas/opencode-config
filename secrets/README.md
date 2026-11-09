@@ -11,8 +11,8 @@ This directory contains API keys and tokens referenced by `opencode.json` via `{
 | `homeassistant.url` | ha-mcp webhook endpoint URL (`https://<ha-host>/api/webhook/mcp_<id>`) — webhook ID is the secret, no token needed |
 | `firecrawl.url` | Firecrawl MCP API base URL (infrastructure — treated as secret) |
 | `firecrawl.key` | Firecrawl MCP API key |
-| `jira.url` | Jira base URL for the Atlassian MCP (infrastructure — treated as secret) |
-| `jira.token` | Jira personal access token (`--jira-personal-token`) |
+| `jira.url` | Jira base URL for the Atlassian MCP (env `JIRA_URL`; infrastructure — treated as secret) |
+| `jira.token` | Jira personal access token (env `JIRA_PERSONAL_TOKEN`) |
 | `bitbucket.url` | Bitbucket Data Center host for the MCP (no scheme, e.g. central-bitbucket.novomatic-tech.com) |
 | `bitbucket.token` | Bitbucket DC HTTP access token (`BITBUCKET_API_TOKEN`) |
 | `stitch.key` | Google Stitch MCP API key |
@@ -44,6 +44,11 @@ Bitbucket** — the `bitbucket` MCP server itself lives in the per-machine
 `opencode.jsonc` (OpenCode v2 aborts the whole config load on a missing `{file:…}`
 reference, same reason as the `grafana-*` servers). `bitbucket.url` is the bare host,
 without a scheme.
+
+**`jira.url` / `jira.token` are only needed on machines whose `opencode.jsonc` defines
+the `jira` MCP server** — the server itself lives in the per-machine `opencode.jsonc`
+(same reason as the `grafana-*` servers: OpenCode v2 aborts the whole config load on a
+missing `{file:…}` reference).
 
 ### Grafana service-account tokens (dev/test/stage)
 

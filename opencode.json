@@ -2669,17 +2669,6 @@
         "FIRECRAWL_API_KEY": "{file:secrets/firecrawl.key}"
       }
     },
-    "jira": {
-      "type": "local",
-      "command": [
-        "mcp-atlassian",
-        "--jira-url",
-        "{file:secrets/jira.url}",
-        "--jira-personal-token",
-        "{file:secrets/jira.token}"
-      ],
-      "enabled": true
-    },
     "stitch": {
       "type": "local",
       "command": [
