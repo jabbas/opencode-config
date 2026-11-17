@@ -162,7 +162,7 @@ test("message names the agent and the offending tool", () => {
 })
 
 test("every profile agent gets the profile; other agents do not", () => {
-  for (const agent of ["architect", "plan", "autopilot", "webscraper", "webresearcher", "webmonitor", "jira", "stitch-mcp"]) {
+  for (const agent of ["architect", "plan", "autopilot", "webscraper", "webresearcher", "webmonitor", "jira"]) {
     assert.equal(run("cat a > b", { agent }).effect, "deny", agent)
     assert.equal(run("git log -1", { agent }).effect, "allow", agent)
   }

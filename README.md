@@ -210,10 +210,11 @@ See `AGENTS.md` for the full agent roster, per-agent skill whitelists, and MCP
 wiring. Key points:
 
 - MCP tools are disabled globally in `opencode.json` (`tools` block) and
-  re-enabled only inside their specialist agent (`ha`, `jira`, `stitch-mcp`,
+  re-enabled only inside their specialist agent (`ha`, `jira`,
   `webscraper`/`webresearcher`/`webmonitor`, `webdebugger`).
-- `jira` and `stitch-mcp` are MCP-operator agents; `stitch` is the separate
-  skill-driven design-to-code agent.
+- `jira` is the MCP-operator agent; `stitch` is the separate skill-driven
+  design-to-code agent and holds the full `stitch_*` toolset (read-only
+  queries and saving downloads alike).
 
 ---
 

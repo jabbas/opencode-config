@@ -55,6 +55,11 @@
         },
         {
           "action": "shell",
+          "effect": "ask",
+          "resource": "*secrets/*"
+        },
+        {
+          "action": "shell",
           "effect": "allow",
           "resource": "printf *"
         },
@@ -148,6 +153,11 @@
           "action": "shell",
           "effect": "allow",
           "resource": "cat *"
+        },
+        {
+          "action": "shell",
+          "effect": "ask",
+          "resource": "*secrets/*"
         },
         {
           "action": "shell",
@@ -268,6 +278,11 @@
           "action": "shell",
           "effect": "allow",
           "resource": "cat *"
+        },
+        {
+          "action": "shell",
+          "effect": "ask",
+          "resource": "*secrets/*"
         },
         {
           "action": "shell",
@@ -1622,6 +1637,7 @@
       ]
     },
     "general": {
+      "mode": "all",
       "permissions": [
         {
           "action": "subagent",
@@ -2057,6 +2073,11 @@
           "action": "shell",
           "effect": "ask",
           "resource": "scp *opencode.json*"
+        },
+        {
+          "action": "shell",
+          "effect": "ask",
+          "resource": "scp *opencode.*.json"
         },
         {
           "action": "shell",
@@ -2670,6 +2691,11 @@
         },
         {
           "action": "shell",
+          "effect": "ask",
+          "resource": "*secrets/*"
+        },
+        {
+          "action": "shell",
           "effect": "allow",
           "resource": "printf *"
         },
@@ -2766,6 +2792,11 @@
           "action": "shell",
           "effect": "allow",
           "resource": "cat *"
+        },
+        {
+          "action": "shell",
+          "effect": "ask",
+          "resource": "*secrets/*"
         },
         {
           "action": "shell",
@@ -3191,91 +3222,6 @@
         }
       ]
     },
-    "stitch-mcp": {
-      "mode": "all",
-      "permissions": [
-        {
-          "action": "stitch_*",
-          "effect": "allow",
-          "resource": "*"
-        },
-        {
-          "action": "shell",
-          "effect": "deny",
-          "resource": "*"
-        },
-        {
-          "action": "shell",
-          "effect": "allow",
-          "resource": "echo *"
-        },
-        {
-          "action": "shell",
-          "effect": "allow",
-          "resource": "ls *"
-        },
-        {
-          "action": "shell",
-          "effect": "allow",
-          "resource": "test *"
-        },
-        {
-          "action": "shell",
-          "effect": "allow",
-          "resource": "[ *"
-        },
-        {
-          "action": "shell",
-          "effect": "allow",
-          "resource": "head *"
-        },
-        {
-          "action": "shell",
-          "effect": "allow",
-          "resource": "cat *"
-        },
-        {
-          "action": "shell",
-          "effect": "allow",
-          "resource": "printf *"
-        },
-        {
-          "action": "shell",
-          "effect": "allow",
-          "resource": "mkdir *"
-        },
-        {
-          "action": "shell",
-          "effect": "deny",
-          "resource": "*>*"
-        },
-        {
-          "action": "subagent",
-          "effect": "allow",
-          "resource": "*"
-        },
-        {
-          "action": "subagent",
-          "effect": "deny",
-          "resource": "autopilot"
-        },
-        {
-          "action": "subagent",
-          "effect": "deny",
-          "resource": "stitch-mcp"
-        },
-        {
-          "action": "skill",
-          "effect": "deny",
-          "resource": "*"
-        },
-        {
-          "action": "skill",
-          "effect": "allow",
-          "resource": "using-superpowers"
-        }
-      ]
-    },
     "webdebugger": {
       "mode": "all",
       "permissions": [
@@ -3431,6 +3377,11 @@
         },
         {
           "action": "shell",
+          "effect": "ask",
+          "resource": "*secrets/*"
+        },
+        {
+          "action": "shell",
           "effect": "allow",
           "resource": "printf *"
         },
@@ -3536,6 +3487,11 @@
         },
         {
           "action": "shell",
+          "effect": "ask",
+          "resource": "*secrets/*"
+        },
+        {
+          "action": "shell",
           "effect": "allow",
           "resource": "printf *"
         },
@@ -3638,6 +3594,11 @@
           "action": "shell",
           "effect": "allow",
           "resource": "cat *"
+        },
+        {
+          "action": "shell",
+          "effect": "ask",
+          "resource": "*secrets/*"
         },
         {
           "action": "shell",
@@ -11537,6 +11498,11 @@
       "action": "shell",
       "effect": "deny",
       "resource": "sudo security *"
+    },
+    {
+      "action": "shell",
+      "effect": "ask",
+      "resource": "*secrets/*"
     }
   ],
   "mcp": {

@@ -96,7 +96,6 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 | `skill-smith` | Create/edit skills, build MCP servers |
 | `jira` | Jira issue tracking via `jira_*` MCP (bash: restricted) |
 | `bitbucket` | Bitbucket Data Center pull requests via `bitbucket_*` MCP — PRs, diffs, comments, reviews (bash: restricted, git read-only) |
-| `stitch-mcp` | Google Stitch UI design via `stitch_*` MCP (bash: restricted; separate from skill-driven `stitch`) |
 
 - `plan` agent is defined in `opencode.json` only (no edit/write tools; bash: restricted — echo/ls/test/head/cat/printf/mkdir, no redirects).
 - `websearch` was removed — curl/wget is covered by any bash-enabled agent; readable web content via `@webscraper`.

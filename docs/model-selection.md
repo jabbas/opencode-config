@@ -99,7 +99,6 @@ Poniżej skrótowy opis zadań każdego agenta na podstawie ich definicji. Dobó
 | **webdebugger** | Playwright przez MCP: snapshoty, inspektowanie sieci, konsola JS. |
 | **ha** | Home Assistant przez MCP — sterowanie, automatyzacje, encje. |
 | **jira** | Jira przez MCP — JQL, przejscia, komentarze, worklogi, sprinty. |
-| **stitch-mcp** | Projektowanie UI w Google Stitch przez MCP. |
 | **webscraper** | Firecrawl — scrape i crawl pojedynczych oraz wielu stron. |
 | **webmonitor** | Firecrawl — monitory zmian na stronach. |
 
@@ -125,7 +124,6 @@ Poniżej skrótowy opis zadań każdego agenta na podstawie ich definicji. Dobó
 | webdebugger | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
 | ha | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
 | jira | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
-| stitch-mcp | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
 | webscraper | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
 | webmonitor | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
 
@@ -177,7 +175,7 @@ Poniżej skrótowy opis zadań każdego agenta na podstawie ich definicji. Dobó
 
 ---
 
-### 5.4 DeepSeek V4 Flash — role MCP i masowe (webdebugger, ha, jira, stitch-mcp, webscraper, webmonitor)
+### 5.4 DeepSeek V4 Flash — role MCP i masowe (webdebugger, ha, jira, webscraper, webmonitor)
 
 **Model:** `kilocode/deepseek/deepseek-v4-flash` | Cena: $0.14 / $0.28 za 1M tokenów
 
