@@ -25,7 +25,7 @@ changes.** It has the code style, naming conventions, build/test commands, full
 repo layout, and error-handling patterns. Non-editing tasks (queries, web ops,
 home automation) do not need it.
 
-**After updating skill submodules or editing any `permission.skill` whitelist, run
+**After updating skill submodules or editing any `skill` whitelist (`agents.<name>.permissions` with `action: "skill"`), run
 `bash scripts/check-skill-whitelists.sh` and fix every `[FAIL]`.** A whitelist key
 that matches no skill ID silently grants nothing (v2 matches the directory name,
 not `name:`). Then report new `[INFO]` orphans to the user so they can decide which
@@ -34,22 +34,21 @@ agent, if any, gets them.
 ## Model Layer & Machine Portability
 
 This config is shared verbatim between the private and work machines. The shared
-`opencode.json` contains no top-level `model`/`small_model` and no machine-specific
-`provider` block. Those live in a per-machine `opencode.jsonc` (gitignored), which
+`opencode.json` contains no top-level `model` and no machine-specific `providers`
+block. Those live in a per-machine `opencode.jsonc` (gitignored), which
 OpenCode **auto-loads and deep-merges on top of `opencode.json`**. No env var needed.
 
 - **Load order** (ascending precedence, v2): `opencode.json` → `opencode.jsonc`
   → project config (`opencode.json[c]` up the tree, then `.opencode/`). All are
   deep-merged; later layers win per-key. v2 no longer reads `config.json`. Full
   order incl. env vars and managed config: README "Side-by-side configs".
-- **Defaults:** `opencode.jsonc` sets `model` = sonnet and `small_model` = haiku.
-- **Per-agent override:** thinking-role agents can set their own model via
-  `agent.<name>.model`. Everyone else inherits the global default. To change a
+- **Defaults:** `opencode.jsonc` sets `model` = sonnet and `agents.title.model` = haiku (that is where v1 `small_model` lives).
+- **Per-agent override:** thinking-role agents can set their own model via `agents.<name>.model`. Everyone else inherits the global default. To change a
   model for one agent, edit one line in `opencode.jsonc`. (Note: `opencode.json`
   also pins a few agent models that are meant to be identical everywhere —
-  currently `autopilot` and `architect`.)
+  currently `agents.autopilot` and `agents.architect`.)
 - **Providers:** machine-specific providers (e.g. a work-only gateway such as
-  `kilocode`) go in `opencode.jsonc`'s `provider` block, not in `opencode.json`.
+  `kilocode`) go in `opencode.jsonc`'s `providers` block, not in `opencode.json`.
 - **Never use `OPENCODE_CONFIG`.** It only applies where the env var is exported
   (GUI/ACP launches and the launchd background service get `model: null`) and is
   merged *after* `opencode.jsonc`, silently overriding it. (`OPENCODE_CONFIG_DIR`
@@ -80,7 +79,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 | `general` | General-purpose fallback; software + DevOps (prompt: `agents/general.md`) |
 | `coder` | Polyglot code — Go, Python, TypeScript, Shell |
 | `architect` | Software/system architecture, ADRs, design, plans (bash: restricted; delegates) |
-| `autopilot` | User-only autonomous orchestrator; subagents execute. `bash: restricted`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it from the `subagent` tool) + `task: {autopilot: deny}` on all agents |
+| `autopilot` | User-only autonomous orchestrator; subagents execute. `bash: restricted`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it from the `subagent` tool) + `subagent` deny for `autopilot` on all agents |
 | `debugger` | Full-stack debugging; diagnoses, then applies clear fixes |
 | `reviewer` | Independent code review on a different model family — model set per machine in `opencode.jsonc`; read-only (no edit, bash: git read + focused tests) |
 | `devops` | CI/CD, GitHub, Flux, Helm, Kustomize, git ops |
@@ -118,12 +117,12 @@ These apply to every agent (this file is injected globally via `Instruction.syst
   "needs `@jenkins`: trigger job X"). The coordinator does the hand-off.
 - **NEVER delegate to yourself.** If the task falls within your own specialty, DO
   THE WORK DIRECTLY — do not dispatch a subagent of your own type (e.g. `jenkins`
-  calling `@jenkins`). Self-dispatch is also hard-blocked: every agent has
-  `task: {"<own-name>": "deny"}` in `opencode.json`, so the attempt will fail —
+  calling `@jenkins`). Self-dispatch is also hard-blocked: every agent has a
+  `subagent` `deny` rule for its own name in `opencode.json`, so the attempt will fail —
   don't waste a turn trying.
 - **Any agent may be dispatched, except `autopilot`.** Every agent carries
-  `task: {"*": "allow", "autopilot": "deny", "<own-name>": "deny"}` in
-  `opencode.json` (v2 migrates the v1 `task` permission to `subagent`).
+  `subagent` rules in `opencode.json` (`allow` on resource `*`, then `deny` for
+  `autopilot` and for its own name).
   `autopilot` is excluded by that rule AND by `mode: primary`.
 - **Dispatchable agents need `"mode": "all"`.** OpenCode v2 defaults agents without
   a `mode` to `primary`, which hides them from the `subagent` tool ("Agent X cannot
@@ -150,7 +149,7 @@ These apply to every agent (this file is injected globally via `Instruction.syst
   - **Fallback:** if the `@reviewer` dispatch fails because its model is unavailable
     (quota, rate limit, provider down), re-run that same review once on `@reviewer`
     **with `model`** (per SDD Model Selection) — the `model` parameter overrides
-    `agent.reviewer.model` while keeping the reviewer's read-only sandbox and prompt.
+    `agents.reviewer.model` while keeping the reviewer's read-only sandbox and prompt.
     Never fall back to `@general` (full edit + shell). Record
     `Ruling: review <stage/task N> on @reviewer with model <id> — reviewer model
     unavailable (<error>) — same-family review` in the SDD ledger / autopilot audit
@@ -182,9 +181,10 @@ These apply to every agent (this file is injected globally via `Instruction.syst
 
 ## Per-Agent Skill Whitelists (token optimization)
 
-Each agent's visible skills are restricted via `permission.skill` in
-`opencode.json` (`agent.<name>.permission.skill`), pattern
-`{"*": "deny", "<skill>": "allow", ...}`. **Only `deny` saves tokens** — a denied
+Each agent's visible skills are restricted via `skill` rules in
+`opencode.json` (`agents.<name>.permissions`), starting from
+`{"action": "skill", "resource": "*", "effect": "deny"}` followed by
+`{"action": "skill", "resource": "<skill-id>", "effect": "allow"}` entries. **Only `deny` saves tokens** — a denied
 skill is hidden from `<available_skills>` AND blocked from invocation; `allow`/`ask`
 both keep it on the list at full cost (verified on v2.0.29:
 `packages/core/src/skill.ts:34` `Skill.available` filters `effect !== "deny"`;
@@ -220,4 +220,4 @@ display name. OpenCode also ships built-in skills (`opencode`, `report`).
 
 ID collisions: sources are loaded in order into a map, so the **later source wins**.
 There is no `superpowers:` prefix in v2 — avoid duplicate directory names instead.
-Per-agent visibility is then filtered by `permission.skill` (see "Per-Agent Skill Whitelists").
+Per-agent visibility is then filtered by `skill` permission rules (see "Per-Agent Skill Whitelists").

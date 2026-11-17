@@ -2,10 +2,10 @@
 #
 # check-skill-whitelists.sh [CONFIG_DIR]
 #
-# Verifies that every skill referenced in an agent's permission.skill whitelist
-# (agent.<name>.permission.skill entries that are not "deny" in opencode.json)
-# corresponds to a skill OpenCode v2 actually discovers, a known built-in, or —
-# for wildcard patterns — matches at least one of those.
+# Verifies that every skill referenced in an agent's skill whitelist
+# (`agents.<name>.permissions` entries with action "skill" and effect != "deny"
+# in opencode.json) corresponds to a skill OpenCode v2 actually discovers, a
+# known built-in, or — for wildcard patterns — matches at least one of those.
 #
 # Why: a whitelist key that matches no skill ID silently grants nothing. v2
 # (packages/core/src/skill.ts `Skill.available`) only filters out "deny", and
@@ -95,11 +95,11 @@ done < <(cut -f1 <<<"$DISCOVERED" | sed '/^$/d' | sort | uniq -d)
 # --- Whitelist entries that make a skill visible: "<agent>\t<key>" ---
 WHITELIST="$(
   jq -r '
-    .agent // {} | to_entries[]
+    .agents // {} | to_entries[]
     | .key as $a
-    | (.value.permission.skill // {}) | to_entries[]
-    | select(.value != "deny")
-    | "\($a)\t\(.key)"
+    | (.value.permissions // [])[]
+    | select(.action == "skill" and .effect != "deny")
+    | "\($a)\t\(.resource)"
   ' "$CONFIG"
 )"
 

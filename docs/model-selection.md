@@ -8,7 +8,7 @@
 >
 > **Stan faktyczny:** wszyscy agenci działają na modelach Anthropic —
 > `claude-sonnet-5` domyślnie, `claude-opus-5` dla `architect` i `debugger`,
-> `claude-haiku-4-5` jako `small_model`. Rozliczane subskrypcją Claude Max 5x,
+> `claude-haiku-4-5` jako `agents.title.model` (w v1: `small_model`). Rozliczane subskrypcją Claude Max 5x,
 > nie per-token.
 >
 > Nieaktualna jest też sekcja 8: modele ustawia się w `opencode.jsonc`

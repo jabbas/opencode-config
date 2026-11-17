@@ -29,11 +29,11 @@ skill "$C/skill/dup" "dup"
 skill "$C/skills/pack/dup" "dup"
 
 write_config() {
-  printf '{"agent":{%s}}' "$1" > "$C/opencode.json"
+  printf '{"agents":{%s}}' "$1" > "$C/opencode.json"
 }
 
 # --- Case 1: all entries valid under v2 rules -> exit 0 ---
-write_config '"good":{"permission":{"skill":{"*":"deny","generate-design":"allow","solo":"allow","flat":"allow","linkedskill":"allow","opencode":"allow","report":"ask","gen*":"allow","dup":"allow"}}}'
+write_config '"good":{"permissions":[{"action":"skill","resource":"*","effect":"deny"},{"action":"skill","resource":"generate-design","effect":"allow"},{"action":"skill","resource":"solo","effect":"allow"},{"action":"skill","resource":"flat","effect":"allow"},{"action":"skill","resource":"linkedskill","effect":"allow"},{"action":"skill","resource":"opencode","effect":"allow"},{"action":"skill","resource":"report","effect":"ask"},{"action":"skill","resource":"gen*","effect":"allow"},{"action":"skill","resource":"dup","effect":"allow"}]}'
 if out="$("$CHECK" "$C" 2>&1)"; then :; else
   fail "valid whitelist should pass (exit 0); got: $out"
 fi
@@ -41,7 +41,7 @@ grep -q '^\[PASS\]' <<<"$out" || fail "expected [PASS] line; got: $out"
 grep -q "^\[WARN\].*'dup'" <<<"$out" || fail "expected [WARN] for duplicate skill ID 'dup'; got: $out"
 
 # --- Case 2: v1-style / undiscovered entries -> exit 1, one FAIL each ---
-write_config '"bad":{"permission":{"skill":{"*":"deny","stitch::*":"allow","stitch::generate-design":"allow","hidden":"allow","customize-opencode":"allow","ignored":"deny"}}}'
+write_config '"bad":{"permissions":[{"action":"skill","resource":"*","effect":"deny"},{"action":"skill","resource":"stitch::*","effect":"allow"},{"action":"skill","resource":"stitch::generate-design","effect":"allow"},{"action":"skill","resource":"hidden","effect":"allow"},{"action":"skill","resource":"customize-opencode","effect":"allow"},{"action":"skill","resource":"ignored","effect":"deny"}]}'
 if out="$("$CHECK" "$C" 2>&1)"; then
   fail "dead entries should fail (exit 1); got: $out"
 fi

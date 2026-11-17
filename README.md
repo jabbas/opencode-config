@@ -15,7 +15,7 @@ same everywhere; everything machine-specific lives in two gitignored places:
 | File | Tracked? | Same on every machine? | Holds |
 |------|----------|------------------------|-------|
 | `opencode.json` | yes | **yes (identical)** | agents, MCP servers, skills, permissions, tool gating |
-| `opencode.jsonc` | no (gitignored) | no | `model`, `small_model`, `provider` block, per-agent model overrides |
+| `opencode.jsonc` | no (gitignored) | no | `model`, `agents.title.model`, `providers` block, per-agent model overrides |
 | `secrets/*` | no (gitignored) | no | API keys and infra URLs (`{file:secrets/...}`) |
 
 At runtime OpenCode auto-loads and deep-merges, in ascending precedence:
@@ -60,18 +60,18 @@ edit one line** in that file:
 {
   "$schema": "https://opencode.ai/config.json",
   "model": "anthropic/claude-sonnet-5",
-  "small_model": "anthropic/claude-haiku-4-5",
-  "provider": { },
-  "agent": {
+  "agents": {
+    "title":    { "model": "anthropic/claude-haiku-4-5" },
     "architect": { "model": "anthropic/claude-opus-5" },
     "debugger":  { "model": "anthropic/claude-opus-5" },
     "reviewer":  { "model": "<other-family model>" }
-  }
+  },
+  "providers": { }
 }
 ```
 
 Machine-specific providers (e.g. a work-only gateway such as `my-company`) go in the
-`provider` block here — never in `opencode.json`.
+`providers` block here — never in `opencode.json`.
 
 A few agent models are pinned in the shared `opencode.json` instead, because they
 should be identical on every machine (currently `autopilot` → sonnet, `architect`
@@ -92,7 +92,7 @@ git submodule update --init --recursive
 ### 2. Create `opencode.jsonc`
 
 Copy the template above into `~/.config/opencode/opencode.jsonc` and fill in
-the `provider` block for this machine (leave `{}` if none). It is picked up
+the `providers` block for this machine (leave `{}` if none). It is picked up
 automatically — nothing else to wire up.
 
 #### Optional: switchable variants
@@ -225,7 +225,7 @@ jq empty opencode.json && echo OK
 
 # the local layer is actually being applied
 opencode debug config > /tmp/cfg.json      # ~70 KB; don't pipe straight to jq
-jq '{model, small_model, architect: .agent.architect.model}' /tmp/cfg.json
+jq '{model, title: .agents.title.model, architect: .agents.architect.model}' /tmp/cfg.json
 
 # per-agent resolution
 opencode debug agents > /tmp/agents.json   # ~4 MB; don't pipe straight to jq
@@ -235,10 +235,10 @@ jq -c '.[] | select(.id=="architect") | {id, model}' /tmp/agents.json
 opencode run --standalone --agent reviewer "Reply with OK"   # header must show the reviewer model from opencode.jsonc, not the default
 ```
 
-`model`/`small_model` coming back `null` means `opencode.jsonc` is missing or not
+`model`/`agents.title.model` coming back `null` means `opencode.jsonc` is missing or not
 being read.
 
-An invalid or retired `agent.reviewer.model` id falls back silently to the default
+An invalid or retired `agents.reviewer.model` id falls back silently to the default
 model — run the reviewer check after setting or changing it (especially `kilo/…` ids
 on the work machine).
 
