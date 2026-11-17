@@ -6,6 +6,7 @@ import path from "node:path"
 const MAX_RESOURCE = 300
 const HEREDOC = /<<-?[ \t]*(['"]?)([A-Za-z_][\w-]*)\1([^\n]*)\n[\s\S]*?(?:\n[ \t]*\2[ \t]*(?=\n|$)|$)/g
 const SECRET_KV = /(password|token|secret)=\S+/gi
+let reportedWriteFailure = false
 
 /** Heredoc bodies -> "<<heredoc>>", `password|token|secret=…` -> `=<redacted>`, clipped to 300 chars. */
 export function redactResource(text) {
@@ -21,7 +22,10 @@ export function expandHome(p, home = os.homedir()) {
   return p
 }
 
-/** Append one JSON line to `file` (mkdir -p). Returns true on success; swallows I/O errors. */
+/** Append one JSON line to `file` (mkdir -p). Returns true on success, false on I/O failure.
+ *  Failures are reported once per process (the flag resets after a successful write) instead of
+ *  thrown: this runs inside a permission hook, so throwing would take down the observer whose
+ *  only job is to record what happened. */
 export function appendLog(file, entry) {
   try {
     const out = { ...entry }
@@ -38,8 +42,16 @@ export function appendLog(file, entry) {
     } catch {
       // not ours / read-only: ignore
     }
+    reportedWriteFailure = false
     return true
-  } catch {
+  } catch (error) {
+    if (!reportedWriteFailure) {
+      reportedWriteFailure = true
+      console.error(
+        `[permission-model] decision log write failed for ${file}: ${error?.message ?? error}. ` +
+          "Audit is incomplete; further write failures are suppressed until a write succeeds."
+      )
+    }
     return false
   }
 }
