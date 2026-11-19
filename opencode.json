@@ -20,7 +20,7 @@
       "permissions": [
         {
           "action": "shell",
-          "effect": "deny",
+          "effect": "ask",
           "resource": "*"
         },
         {
