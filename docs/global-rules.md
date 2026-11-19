@@ -18,6 +18,14 @@
 - NEVER write OpenCode config through the shell (`~/.config/opencode/opencode.json*`, `agents/`, `secrets/`, any `.opencode/`) — use edit/write so the user gets the permission prompt
 - The `shell-style` plugin denies echo/printf/heredoc writes to files outside `$TMPDIR` with an explanation.
 
+## Documentation References
+
+- NEVER put commit SHAs in documentation (design docs, runbooks, READMEs, Jira descriptions). A rebase or force-push turns them into dead references, and they carry no meaning for a reader.
+- Do NOT sprinkle ticket/epic numbers through a document body either: they add nothing the reader can act on.
+- Reference what ages well: file paths, resource names, config keys, and the decision with its rationale.
+- Traceability belongs to git: the ticket goes in the commit message; the document explains intent and the contract.
+- Exception: an incident record may name the deployed version or chart version as of the incident — never a SHA.
+
 ## Shell Command Style
 
 Permissions match the literal command text — follow this or every call triggers a permission prompt:
