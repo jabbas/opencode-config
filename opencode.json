@@ -16,7 +16,6 @@
   "agents": {
     "architect": {
       "mode": "all",
-      "model": "anthropic/claude-opus-5-5",
       "permissions": [
         {
           "action": "shell",
@@ -117,7 +116,6 @@
     },
     "autopilot": {
       "mode": "primary",
-      "model": "anthropic/claude-sonnet-5-5",
       "permissions": [
         {
           "action": "shell",
