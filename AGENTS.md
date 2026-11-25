@@ -43,10 +43,11 @@ OpenCode **auto-loads and deep-merges on top of `opencode.json`**. No env var ne
   deep-merged; later layers win per-key. v2 no longer reads `config.json`. Full
   order incl. env vars and managed config: README "Side-by-side configs".
 - **Defaults:** `opencode.jsonc` sets `model` = sonnet and `agents.title.model` = haiku (that is where v1 `small_model` lives).
-- **Per-agent override:** thinking-role agents can set their own model via `agents.<name>.model`. Everyone else inherits the global default. To change a
-  model for one agent, edit one line in `opencode.jsonc`. (Note: `opencode.json`
-  also pins a few agent models that are meant to be identical everywhere —
-  currently `agents.autopilot` and `agents.architect`.)
+- **Per-agent override:** agents set their own model via `agents.<name>.model`. Everyone else inherits the global default. To change a
+  model for one agent, edit one line in `opencode.jsonc`. `opencode.json` carries
+  **no** model pins — a pin there would win over `opencode.jsonc` and break
+  per-machine control (the old `agents.architect` / `agents.autopilot` pins were
+  removed for that reason).
 - **Providers:** machine-specific providers (e.g. a work-only gateway such as
   `kilocode`) go in `opencode.jsonc`'s `providers` block, not in `opencode.json`.
 - **Never use `OPENCODE_CONFIG`.** It only applies where the env var is exported
@@ -78,7 +79,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 |-------|---------|
 | `general` | General-purpose fallback; software + DevOps (prompt: `agents/general.md`) |
 | `coder` | Polyglot code — Go, Python, TypeScript, Shell |
-| `architect` | Software/system architecture, ADRs, design, plans (bash: `ask` — read-only allowlist runs freely, rest prompts; no redirects; delegates) |
+| `architect` | Software/system architecture, ADRs, design, plans (bash: `ask` — read-only allowlist plus `kubectl … --dry-run=client` / `=server` run freely, rest prompts; no redirects; delegates) |
 | `autopilot` | User-only autonomous orchestrator; subagents execute. `bash: restricted`; `edit` denied except `docs/superpowers/**` (own artifacts only — `write` is gated by the `edit` permission). Not dispatchable by any agent — `mode: primary` (hides it from the `subagent` tool) + `subagent` deny for `autopilot` on all agents |
 | `debugger` | Full-stack debugging; diagnoses, then applies clear fixes |
 | `reviewer` | Independent code review on a different model family — model set per machine in `opencode.jsonc`; read-only (no edit, bash: git read + focused tests) |
@@ -99,7 +100,7 @@ submodules (`superpowers/`, `anthropics-skills/`, `cloudflare-skills/`,
 
 - `plan` agent is defined in `opencode.json` only (no edit/write tools; bash: restricted — echo/ls/test/head/cat/printf/mkdir, no redirects).
 - `websearch` was removed — curl/wget is covered by any bash-enabled agent; readable web content via `@webscraper`.
-- Models are intentionally omitted here; they come from `opencode.jsonc` on each machine (plus a few cross-machine pins in `opencode.json`).
+- Models are intentionally omitted here; they come from `opencode.jsonc` on each machine. `opencode.json` carries no model pins. Current assignment: `docs/model-selection.md`.
 
 ## Delegation Rules (All Agents)
 

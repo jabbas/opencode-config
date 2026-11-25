@@ -1,329 +1,178 @@
 # Dobór modeli LLM dla agentów OpenCode
 
-> ## ⚠️ SUPERSEDED — dokument historyczny (nieaktualny od 2026-09-05)
->
-> **Ten dokument NIE opisuje obecnej konfiguracji.** Opisuje decyzję z czerwca 2026
-> o przejściu na modele non-frontier przez gateway Kilo Code (GLM 5.2, Kimi K2.7
-> Code, Qwen3.7 Plus, DeepSeek V4 Flash). Ta decyzja została porzucona.
->
-> **Stan faktyczny:** wszyscy agenci działają na modelach Anthropic —
-> `claude-sonnet-5` domyślnie, `claude-opus-5` dla `architect` i `debugger`,
-> `claude-haiku-4-5` jako `agents.title.model` (w v1: `small_model`). Rozliczane subskrypcją Claude Max 5x,
-> nie per-token.
->
-> Nieaktualna jest też sekcja 8: modele ustawia się w `opencode.jsonc`
-> (auto-mergowany; może być symlinkiem do wariantu `opencode.*.json`), a nie
-> w `opencode.local.json` przez `OPENCODE_CONFIG` — ten mechanizm został wycofany,
-> bo działał tylko tam, gdzie zmienna była wyeksportowana (GUI/ACP dostawały
-> `model: null`) i nadpisywał `opencode.jsonc`.
->
-> Zachowane jako zapis rozumowania (metodologia, odrzucone opcje, ryzyko
-> `:discounted` / `mayTrainOnYourPrompts`) — przydatne, gdyby wracać do tematu
-> non-frontier. Aktualny stan: `README.md` i `AGENTS.md`.
+**Stan: 2026-11-26.** Dokument opisuje **obecną** konfigurację. Wcześniejsza wersja
+z czerwca 2026 (przejście na GLM 5.2 / Kimi K2.7 / Qwen3.7 Plus przez `kilocode/`)
+została porzucona i usunięta — jej wnioski są w historii gita.
 
-**Stan: czerwiec 2026**
+## 1. Zasada nadrzędna: modele tylko w `opencode.jsonc`
 
----
+`opencode.json` (wersjonowany, współdzielony między maszynami) **nie zawiera żadnego
+przypięcia modelu** — ani globalnego, ani per-agent. Wszystkie modele ustawia
+per-maszyna `opencode.jsonc` (gitignorowany, może być symlinkiem do wariantu
+`opencode.*.json`, np. `opencode.kilocode.json`).
 
-## 1. Kontekst i cel
+Konsekwencje:
 
-Celem jest przypisanie optymalnych modeli językowych do każdego z 17 agentów OpenCode, z uwzględnieniem ich rzeczywistych zadań, a nie wyłącznie nazw ról. Modele pochodzą wyłącznie z oferty Kilo Code.
+- Nie ma „cross-machine pins". Poprzednio `architect` i `autopilot` były przypięte
+  w `opencode.json` do modeli Anthropic — to zostało usunięte. Powód: przypięcie
+  wygrywało z `opencode.jsonc` i uniemożliwiało sterowanie modelem per maszyna.
+- Zmiana modelu = jedna linia w `opencode.jsonc`. Nie dotykaj `opencode.json`.
+- Maszyna bez odpowiednika modelu w swoim jsonc dostaje domyślny (top-level `model`).
 
-### Ograniczenia obligatoryjne
+## 2. Role modelowe
 
-| Ograniczenie | Szczegół |
-|---|---|
-| Brak modeli frontier | Wykluczone: Anthropic (Claude), OpenAI (GPT), Google (Gemini). Powód: koszt. |
-| Brak retencji/treningu na danych | Praca nad firmowym kodem objętym NDA. Modele muszą gwarantować brak uczenia na promptach/odpowiedziach. |
+Agenci różnią się charakterem pracy, nie tylko nazwą. Stąd trzy role:
 
-### Provider
-
-**Kilo Code** — `baseURL: https://api.kilo.ai/api/gateway`
-
-Pełna lista modeli (321 modeli, 53 dostawców) dostępna wyłącznie przez API, nie w pliku konfiguracyjnym. Aby pobrać aktualną listę:
-
-```
-GET https://api.kilo.ai/api/gateway/models
-Authorization: Bearer <klucz>
-X-KiloCode-OrganizationId: <org-id>
-```
-
-Klucz API: `~/.local/share/opencode/auth.json` (pole `.kilocode.key`). ID organizacji: `<your-org-id>`.
-
----
-
-## 2. Metodologia
-
-### Kroki analizy
-
-1. Pobrano pełną listę modeli z Kilo Code API.
-2. Zebrano benchmarki i opinie branżowe z czerwca 2026 (zob. tabela poniżej).
-3. Przeczytano definicje wszystkich 17 agentów — ich faktyczne zadania (nie nazwy) — by dopasować model do realnej pracy.
-
-### Zrodla benchmarkow
-
-| Zrodlo | Data | Uwagi |
+| Rola | Charakter pracy | Wymagania |
 |---|---|---|
-| kilo.ai/leaderboard (KiloBench) | czerwiec 2026 | Najtrafniejszy — mierzy realne srodowisko Kilo Code |
-| swebench.com (SWE-bench Verified/Pro) | czerwiec 2026 | Kodowanie, naprawianie bugów GitHub |
-| Terminal-Bench 2.1 | czerwiec 2026 | CLI, narzedzia systemowe, bash |
-| benchlm.ai | 18.06.2026 | Agregat wielu benchmarków |
-| morphllm.com | 09.06.2026 | Badanie jakosci vs tooling |
-| teamai.com | 22.06.2026 | Opinie praktyczne |
-| groundy.com | 19.06.2026 | Porównania kosztów |
-| llm-stats.com | czerwiec 2026 | Statystyki parametrów modeli |
+| **reasoning** | długie dokumenty, analiza, planowanie, ADR | głębokie rozumowanie, niska skłonność do pewnej-nieprawdy |
+| **coding** | pisanie i transformacja kodu, tool-calling | wysoka sprawność agentowa, tanio, dużo wywołań |
+| **utility** | MCP, JSON, ekstrakcja, masowe podzadania | tanio, szybko, wystarczy poprawne wywołanie narzędzi |
 
-### Kluczowy meta-wniosek
+## 3. Przydział modeli
 
-Badanie Morph (marzec 2026): różnica jakosci między modelami z czolówki rankingów wynosi ok. 1%, natomiast lepszy tooling i scaffolding daje wzrost skutecznosci rzędu +22%. Wniosek operacyjny: przepłacanie za modele frontier przy agentach z dobrym frameworkiem nie ma uzasadnienia ekonomicznego.
+Stan dla wariantu `opencode.kilocode.json` (maszyna prywatna).
 
----
-
-## 3. Definicje agentów
-
-Poniżej skrótowy opis zadań każdego agenta na podstawie ich definicji. Dobór modelu bazuje na tym co agent realnie robi, nie na jego nazwie.
-
-| Agent | Rzeczywiste zadania |
-|---|---|
-| **architect** | ADR, design docs, D2 diagramy, API contracts, plany migracji. Głeboki reasoning, brak wykonywania bash, dużo delegowania subagentom. |
-| **debugger** | Full-stack: klaster Kubernetes -> pody -> logi -> kod zrodłowy. Wykonuje bash, diagnozuje root-cause, czyta długie logi. |
-| **autopilot** | Orkiestrator: planuje i deleguje wszystko subagentom. Niezależny review wyników. |
-| **devops** | Kubernetes, Helm, Flux, Kustomize, GitHub Actions. Operacje na żywym klastrze, bash. |
-| **skill-smith** | Tworzy skille (behavior code) oraz serwery MCP. |
-| **coder** | Programowanie polyglot: Go, Python, TypeScript. TDD, refaktoryzacja, testy. |
-| **frontend** | Komponenty UI, generative art, theming, testowanie w przegladarce. |
-| **cloudflare** | Workers, wrangler, Durable Objects, KV, D1, R2. |
-| **stitch** | Konwersja projektów Google Stitch do kodu React/React Native. |
-| **webresearcher** | Wyszukiwanie przez Firecrawl, synteza wyników. |
-| **writer** | Dokumenty techniczne, Word/PPT/PDF. |
-| **webdebugger** | Playwright przez MCP: snapshoty, inspektowanie sieci, konsola JS. |
-| **ha** | Home Assistant przez MCP — sterowanie, automatyzacje, encje. |
-| **jira** | Jira przez MCP — JQL, przejscia, komentarze, worklogi, sprinty. |
-| **webscraper** | Firecrawl — scrape i crawl pojedynczych oraz wielu stron. |
-| **webmonitor** | Firecrawl — monitory zmian na stronach. |
-
----
-
-## 4. Finalny przydział modeli
-
-### Tabela przydziałów
-
-| Agent | Model | ID w konfigu |
+| Agent | Model | Cena in/out za 1M |
 |---|---|---|
-| architect | GLM 5.2 | `kilocode/z-ai/glm-5.2` |
-| debugger | GLM 5.2 | `kilocode/z-ai/glm-5.2` |
-| autopilot | GLM 5.2 | `kilocode/z-ai/glm-5.2` |
-| devops | GLM 5.2 | `kilocode/z-ai/glm-5.2` |
-| skill-smith | GLM 5.2 | `kilocode/z-ai/glm-5.2` |
-| coder | Kimi K2.7 Code | `kilocode/moonshotai/kimi-k2.7-code` |
-| frontend | Kimi K2.7 Code | `kilocode/moonshotai/kimi-k2.7-code` |
-| cloudflare | Kimi K2.7 Code | `kilocode/moonshotai/kimi-k2.7-code` |
-| stitch | Kimi K2.7 Code | `kilocode/moonshotai/kimi-k2.7-code` |
-| webresearcher | Qwen3.7 Plus | `kilocode/qwen/qwen3.7-plus` |
-| writer | Qwen3.7 Plus | `kilocode/qwen/qwen3.7-plus` |
-| webdebugger | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
-| ha | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
-| jira | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
-| webscraper | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
-| webmonitor | DeepSeek V4 Flash | `kilocode/deepseek/deepseek-v4-flash` |
+| *(domyślny, top-level `model`)* | `kilo/deepseek/deepseek-v4.1-flash-1017` | $0.30 / $1.20 |
+| `architect` | `kilo/openai/gpt-6.2-sol` | $2.00 / $10.00 |
+| `reviewer` | `kilo/openai/gpt-6.2-sol` | $2.00 / $10.00 |
+| `debugger` | `kilo/deepseek/deepseek-v4.1-flash-1017` | $0.30 / $1.20 |
+| `autopilot` | `kilo/deepseek/deepseek-v4.1-flash-1017` | $0.30 / $1.20 |
+| `coder` | `kilo/deepseek/deepseek-v4.1-flash-1017` | $0.30 / $1.20 |
+| `devops` | `kilo/deepseek/deepseek-v4.1-flash-1017` | $0.30 / $1.20 |
+| `skill-smith` | `kilo/deepseek/deepseek-v4.1-flash-1017` | $0.30 / $1.20 |
+| `stitch` | `kilo/deepseek/deepseek-v4.1-flash-1017` | $0.30 / $1.20 |
+| `webresearcher` | `kilo/deepseek/deepseek-v4.1-flash-1017` | $0.30 / $1.20 |
+| `frontend` | `kilo/xiaomi/mimo-v2.6-pro` | $0.43 / $0.87 |
+| `cloudflare` | `kilo/xiaomi/mimo-v2.6-pro` | $0.43 / $0.87 |
+| `writer` | `kilo/xiaomi/mimo-v2.6-pro` | $0.43 / $0.87 |
+| `webdebugger` | `kilo/tencent/hy3` | $0.132 / $0.528 |
+| `ha` | `kilo/tencent/hy4-flash` | $0.07 / $0.281 |
+| `jira` | `kilo/tencent/hy4-flash` | $0.07 / $0.281 |
+| `webscraper` | `kilo/tencent/hy4-flash` | $0.07 / $0.281 |
+| `webmonitor` | `kilo/tencent/hy4-flash` | $0.07 / $0.281 |
+| `title` | `kilo/qwen/qwen3.7-flash` | $0.03 / $0.13 |
 
----
+## 4. Uzasadnienie kluczowych wyborów
 
-## 5. Uzasadnienie kluczowych wyborów
+### 4.1 `architect` → GPT-6.2 Sol
 
-### 5.1 GLM 5.2 — role reasoning i CLI (architect, debugger, autopilot, devops, skill-smith)
+Rola reasoning: czyta duży kontekst, waży alternatywy, pisze ADR i kontrakty API.
+Nie wykonuje kodu ani poleceń (allowlist tylko do odczytu), więc słabość w
+Terminal-Bench nie ma znaczenia — liczy się jakość rozumowania i kalibracja.
 
-**Model:** `kilocode/z-ai/glm-5.2` | Cena: $1.40 / $4.40 za 1M tokenów (input/output) | Kontekst: 1M
+Wybrany mimo najwyższej ceny na liście, bo **koszt per zadanie jest najniższy
+wśród poważnych kandydatów** ($1.01) — model jest zwięzły (~61M tokenów wyjścia
+vs ~99M u GPT-6.1 Terra) i szybki (~10 min/zadanie). Do tego jest niezależny od
+rodziny DeepSeek, na której stoi cały zespół implementujący, więc projekt i jego
+realizacja nie dzielą ślepych plam.
 
-| Benchmark | Wynik GLM 5.2 | Kontekst |
-|---|---|---|
-| SWE-bench Pro | 62.1% | #1 open-source; GPT-5.5 uzyskuje 58.6% |
-| Terminal-Bench 2.1 | 81.0 | Claude Opus 4.8 = 85; ogromna przewaga w CLI/bash/k8s |
-| KiloBench (tool-calling) | #1 open-source | Kluczowe dla agentów MCP-heavy |
-| Long-horizon agentic coding | #1 open-source | Architekt, autopilot, devops |
+Ograniczenia: 1M kontekstu niezweryfikowane powyżej ~512K (rodzina OpenAI degraduje);
+cena wejścia podwaja się powyżej 272K tokenów. Dlatego kontekst architecta trzymaj
+w okolicach 100–250K.
 
-**Uzasadnienie przydziału:**
+> Uwaga: przed zmianą architect stał na `claude-opus-5-5` przez przypięcie
+> w `opencode.json`. Historia użycia pokazała ~$1000/kwartał przy wywołaniach,
+> które kończyły się poprawnie — czyli płacono za jakość, której nie brakowało.
 
-- Roles reasoning (architect, autopilot): wymagają planowania wieloetapowego, analizy złożonych systemów, delegowania. GLM 5.2 dominuje w long-horizon agentic coding.
-- Debugger i devops: Terminal-Bench 2.1 = 81.0 jest decydujące — te role wykonują bash, czytają logi k8s, operują na żywym klastrze. Claude Opus 4.8 uzyskuje 85 (różnica 5%), ale jest frontier (wykluczone).
-- Skill-smith: tworzy behavior code i serwery MCP — wymaga rozumienia narzędzi i ich interakcji; #1 w tool-calling to rozstrzygające kryterium.
+### 4.2 `reviewer` → GPT-6.2 Sol
 
-**Zastrzeżenia:**
-- Latencja TTFT ok. 10s (do obserwacji w praktyce).
-- Benchmarki SWE-bench Pro podawane przez Zhipu — self-reported, weryfikacja niezalezna ograniczona.
+Review jest wyjściowo-ciężki, więc liczy się zwięzłość, nie stawka za token.
+GPT-6.1 Terra ma niższą cenę za token, ale zużywa ~63% więcej tokenów wyjścia,
+co daje $0.96/zadanie przy $1.01 dla Sola — 5% taniej za 6 punktów mniej
+intelligence i większą skłonność do rozwlekłości (czyli więcej fałszywych uwag).
 
----
+`reviewer` celowo ma model z innej rodziny niż implementujący agenci — review
+ma być niezależnym punktem widzenia. Uwaga: `architect` i `reviewer` dzielą ten
+sam model, więc nie są wobec siebie niezależni.
 
-### 5.2 Kimi K2.7 Code — kodowanie (coder, frontend, cloudflare, stitch)
+### 4.3 `webdebugger` vs pozostałe role MCP
 
-**Model:** `kilocode/moonshotai/kimi-k2.7-code` | Cena: $0.95 / $4.00 za 1M tokenów | Kontekst: standard
+`webdebugger` obsługuje Playwright i Chrome DevTools — realna praca terminalowa.
+`tencent/hy3` (256K, brak `parallel_tool_calls`) jest stary, ale utrzymany
+**celowo**: `hy4-flash` ma Terminal-Bench 4.0 na poziomie 19.2, czyli jest zbyt
+słaby do tej roli, mimo niższej ceny.
 
-| Benchmark | Wynik |
-|---|---|
-| KiloBench | 60.7% — #1 non-frontier |
-| Aider Polyglot | wysoka pozycja w rankingach code-specific |
+`hy4-flash` trafił do ról czysto-MCP (`ha`, `jira`, `webscraper`, `webmonitor`),
+gdzie liczy się tylko poprawne wywołanie narzędzia i JSON — i tam jest ~50% tańszy
+przy 1M kontekstu.
 
-**Uzasadnienie:** Specjalista kodu wytrenowany pod tym zadaniem. Najtańszy w top-10 KiloBench. Role coder/frontend/cloudflare/stitch polegają w 90%+ na pisaniu i transformacji kodu — model wyspecjalizowany bije modele ogólne w tym zakresie.
+### 4.4 `mimo-v2.6-pro` (frontend, cloudflare, writer)
 
----
+Model o dobrych wynikach wizualno-tekstowych, ale **wolny** (~60 min/zadanie,
+36 tok/s) — najwolniejszy element konfiguracji. Jeśli odczujesz to w pracy
+interaktywnej, kandydatem na zamianę jest `deepseek-v4.1-flash-1017`.
 
-### 5.3 Qwen3.7 Plus — synteza tekstu (webresearcher, writer)
+## 5. Odrzucone świadomie
 
-**Model:** `kilocode/qwen/qwen3.7-plus` | Cena: $1.00 / $5.00 za 1M tokenów | Kontekst: 1M
+### 5.1 `deepseek/deepseek-v4-pro` — nie używać
 
-**Uzasadnienie:** Role webresearcher i writer produkują głównie tekst: syntezy, raporty, dokumenty. Qwen3.7 Plus ma dobre wskazniki w zadaniach synthesis + summarization przy 1M oknie kontekstu (potrzebne dla duzych crawlów Firecrawl i długich dokumentów).
+Kuszące jako „ten sam dostawca, większy model". W praktyce **gorszy od
+`v4.1-flash-1017` na prawie wszystkich wspólnych benchmarkach**
+(DeepSWE 62.7 vs 74.2, Terminal-Bench 90.6 vs 87.9), indeks inteligencji 23
+(vs 32), a wskaźnik halucynacji 94.1% — model praktycznie nigdy nie mówi
+„nie wiem". Dla dokumentów architektonicznych to dokładnie ten tryb porażki,
+który kosztuje najwięcej.
 
----
+### 5.2 `deepseek-v4.1-flash` (wariant bez `-1017`) — nie używać
 
-### 5.4 DeepSeek V4 Flash — role MCP i masowe (webdebugger, ha, jira, webscraper, webmonitor)
+Na gatewayu widniał w cenie $0.0507/$0.2028, czyli ~6× taniej, co wyglądało na
+oczywistą oszczędność. Zweryfikowane: to **promocja „83% off" u dostawcy
+trzeciorzędnego**, nie cena listowa. DeepSeek serwuje u siebie tylko jeden V4.1
+Flash i jest to 1017; wariant bez sufiksu to starszy snapshot (10.09 vs 17.10)
+z niższymi wynikami (Terminal-Bench 42.3 vs 31.2). Nie budować konfiguracji na
+promocji, która może zniknąć — ta sama klasa błędu co wycofanie `mimo-v2.5-pro`.
 
-**Model:** `kilocode/deepseek/deepseek-v4-flash` | Cena: $0.14 / $0.28 za 1M tokenów
+### 5.3 `mimo-v2.6-flash` — nie używać w agencjach
 
-**Uzasadnienie:** Role te:
-- Operują głównie na danych publicznych lub przez dobrze ustrukturyzowane API MCP (Jira, Home Assistant, Firecrawl, Stitch).
-- Nie wymagają głębokiego reasoning — wykonują sekwencyjne wywołania narzędzi ze structured input/output.
-- Mogą być uruchamiane wielokrotnie (webmonitor, webscraper).
+Xiaomi opublikowało własne post-mortem potwierdzające **zapętlenie wywołań
+narzędzi** w harnessach agentowych. Mimo niskiej ceny dyskwalifikuje to model
+w jakiejkolwiek roli z tool-callingiem.
 
-DeepSeek V4 Flash przy cenie $0.14/$0.28 jest 10x tańszy od GLM 5.2 przy zadaniach, gdzie wyższa jakość nie przynosi wymiernej różnicy w wynikach.
+### 5.4 `glm-5.3` / `glm-5.3-prime`
 
----
+`glm-5.3` był rozważany jako alternatywa dla architecta: lepsza kalibracja
+(halucynacje 38.9% vs 55.4% u Sola), poprawna rodzina niezależna od DeepSeeka.
+Odrzucony za **~27 min/zadanie** (odczuwalne w sesji z człowiekiem) i wyższy
+koszt per zadanie ($5.01). `glm-5.3-prime` odrzucony osobno: płatna premia
+za przepustowość przy **gorszym** trzymaniu instrukcji (73.0%).
 
-## 6. Modele rozważane i odrzucone
+### 5.5 `grok-4.3` / `grok-4.20`
 
-### 6.1 Grok 4.20 (xAI)
+Kusząca cena ($1.25/$2.50) i najniższy wskaźnik halucynacji (25.0%), ale
+**AA-LCR 64.3%** — ok. 15 punktów gorzej niż konkurencja w czytaniu długich
+kontekstów, a to cała praca architecta. Run nie niezależny.
 
-**Rozważany dla:** debugger, devops — ze względu na kontekst 2M tokenów (największy dostępny).
+### 5.6 `kilo-auto/*` i `openrouter/auto*`
 
-**Odrzucony ponieważ:**
-- Kontekst 1M był wystarczający w dotychczasowej pracy.
-- GLM 5.2 uzyskuje lepsze wyniki w Terminal-Bench (kluczowe dla debugger/devops) i tool-calling.
-- 2M kontekstu nie uzasadnia niższej jakosci w wymiarach, które mają znaczenie dla tych ról.
+Routery zwracają w katalogu niesprawdzalne ceny. Nie da się przewidzieć kosztu
+ani tego, który model faktycznie odpowie — nie nadaje się do konfiguracji.
 
----
+## 6. Zasady przy zmianie modeli
 
-### 6.2 DeepSeek V4 Pro
+1. **Lista modeli tylko przez API**, nie z pamięci:
+   `curl -s https://api.kilo.ai/api/gateway/models`
+2. **Weryfikuj ID w katalogu** — nieistniejący ID po cichu spada na model
+   domyślny, bez błędu w logu.
+3. **Sprawdzaj cenę per zadanie, nie za token**, gdy model ma inną gadatliwość.
+4. **Ostrzeżenie o regulaminie**: warianty z `mayTrainOnYourPrompts: true`
+   (dawniej `:discounted`) są nieakceptowalne — praca nad kodem objętym NDA.
+   Sprawdzaj też, czy tańszy wariant nie jest po prostu okrojony funkcjonalnie
+   (mniej parametrów tool-calling), jak `:discounted` w przeszłości.
+5. **Po zmianie sprawdź `git diff`** — `opencode.json` jest wersjonowany i łatwo
+   tam uszkodzić bloki uprawnień.
+6. **Restart sesji** — modele są czytane przy starcie.
 
-**Rozważany dla:** ról reasoning (architect, debugger, autopilot, devops, skill-smith).
-
-| Benchmark | DeepSeek V4 Pro | GLM 5.2 |
-|---|---|---|
-| SWE-bench Verified | 80.6% | — |
-| Terminal-Bench 2.1 | 44 | 81.0 |
-| Cena (input/output za 1M) | $2.40 / $4.80 | $1.40 / $4.40 |
-
-**Odrzucony ponieważ:**
-- Terminal-Bench: 44 vs 81 — przegrywa znacznie w zadaniach CLI/bash, decydujących dla debugger i devops.
-- Gorszy tool-calling.
-- Droższy.
-
-**Status:** Pozostaje jako fallback — jeśli latencja GLM 5.2 (~10s TTFT) okaże się problemem w praktyce, przełączyć architect/autopilot na `kilocode/deepseek/deepseek-v4-pro`.
-
----
-
-### 6.3 Warianty `:discounted` (deepseek-v4-pro:discounted, deepseek-v4-flash:discounted)
-
-**Pozorna zaleta:** ok. 82% nizszy koszt.
-
-**Odrzucone bezwarunkowo z dwóch powodów:**
-
-1. **Ryzyko IP (NDA):** `mayTrainOnYourPrompts: true` — prompty i odpowiedzi mogą byc używane do treningu przez dostawcę (DeepSeek). Naruszenie jest nieodwracalne. Umowa NDA firmy z Kilo Code może nie pokrywac sub-procesora (DeepSeek) na endpoincie zniżkowym.
-
-2. **Okrojony tool-calling:** 5 zamiast 19 parametrów, brak `tool_choice`, brak `structured_outputs`. Agenci OpenCode korzystają intensywnie z tych funkcji — wariant discounted jest funkcjonalnie niekompatybilny.
-
-**Uwaga:** API nie zwraca daty wygaśnięcia tych endpointów, ale ich charakter jest promocyjny. Nie używac niezależnie od okolicznosci.
-
----
-
-## 7. Analiza kosztowa
-
-### Parametry szacunku
-
-Szacunek oparty na założonym profilu sesji: 2M tokenów input + 0.3M tokenów output na sesję roboczą. Realny koszt zależy od intensywności użycia.
-
-### Ceny modeli
-
-| Model | Input (za 1M) | Output (za 1M) |
-|---|---|---|
-| GLM 5.2 | $1.40 | $4.40 |
-| Kimi K2.7 Code | $0.95 | $4.00 |
-| Qwen3.7 Plus | $1.00 | $5.00 |
-| DeepSeek V4 Flash | $0.14 | $0.28 |
-
-### Porownanie setup poprzedni vs obecny
-
-| Setup | Przybliżony koszt / sesję |
-|---|---|
-| Frontier (poprzedni): Opus 4.8 dla architect/autopilot, Sonnet 4.6 dla większosci, Haiku dla tanich ról | ~$135.82 |
-| Non-frontier (obecny) | ~$50–58 |
-| Oszczędnosc | ~57–63% (ok. 2.3–2.7x taniej) |
-
-Głównym generatorem kosztów w poprzednim setupie były Opus 4.8 i Sonnet 4.6. Przejście na non-frontier eliminuje ten koszt przy zachowaniu lub poprawieniu jakosci w mierzalnych wymiarach (Terminal-Bench, KiloBench, tool-calling).
-
----
-
-## 8. Konfiguracja — jak zmieniac i utrzymywac
-
-### Plik konfiguracyjny
-
-```
-~/.config/opencode/opencode.local.json
-```
-
-- Sekcja `"agent"` — model per agent.
-- Sekcja `"provider.kilocode.models"` — definicje modeli z limitami kontekstu i cenami.
-
-### Format identyfikatora modelu
-
-```
-"kilocode/<provider>/<model-id>"
-```
-
-Przykład: `"kilocode/z-ai/glm-5.2"`, `"kilocode/deepseek/deepseek-v4-flash"`.
-
-### Pobieranie aktualnej listy modeli z API
+## 7. Pobieranie listy modeli
 
 ```bash
-curl -s https://api.kilo.ai/api/gateway/models \
-  -H "Authorization: Bearer $(jq -r '.kilocode.key' ~/.local/share/opencode/auth.json)" \
-  -H "X-KiloCode-OrganizationId: <your-org-id>" \
-  | jq '.data[].id' | sort
+curl -s https://api.kilo.ai/api/gateway/models
 ```
 
-### Zmiany wchodza w życie
+Format ID w konfiguracji: `kilo/<provider>/<model-id>`, np.
+`kilo/openai/gpt-6.2-sol`, `kilo/tencent/hy4-flash`.
 
-Po restarcie OpenCode.
-
-### Punkt obserwacji — latencja GLM 5.2
-
-GLM 5.2 ma zmierzony TTFT ok. 10 sekund. Jesli architect lub autopilot okaza się zbyt wolne w praktyce, przełączyc te role na:
-
-```
-kilocode/deepseek/deepseek-v4-pro
-```
-
-Fallback ten zachowuje dobry reasoning (SWE-bench Verified 80.6%) przy niższym TTFT, kosztem gorszego Terminal-Bench i tool-callingu (co dla architect/autopilot jest mniej krytyczne niż dla debugger/devops).
-
----
-
-## 9. Podsumowanie decyzji
-
-| Wymiar | Wybor |
-|---|---|
-| Provider | Kilo Code — jeden provider dla wszystkich agentów, uproszczone rozliczenie |
-| Modele frontier | Wykluczone (koszt) |
-| Modele z retencja danych | Wykluczone (NDA, firmowy kod) |
-| Warianty :discounted | Wykluczone (mayTrainOnYourPrompts + okrojone API) |
-| Model reasoning/CLI | GLM 5.2 — #1 open-source Terminal-Bench i tool-calling |
-| Model kodowania | Kimi K2.7 Code — #1 non-frontier KiloBench |
-| Model tekstu/syntezy | Qwen3.7 Plus — 1M kontekst, dobra synteza |
-| Model masowy/MCP | DeepSeek V4 Flash — 10x taniej, wystarczajacy dla prostych ról |
-| Fallback (latencja GLM) | DeepSeek V4 Pro |
-
----
-
-*Dokument utworzony: czerwiec 2026.*
-
-*Krajobraz modeli LLM zmienia sie co kilka tygodni. Weryfikowac aktualne rankingi przed kolejna aktualizacja konfiguracji:*
-- *kilo.ai/leaderboard (KiloBench — najtrafniejszy dla srodowiska Kilo Code)*
-- *swebench.com*
-- *lmarena.ai*
+*Krajobraz modeli zmienia się co kilka tygodni. Przed kolejną zmianą zestawu
+zweryfikuj ceny i benchmarki — ten dokument opisuje stan na 2026-11-26.*
