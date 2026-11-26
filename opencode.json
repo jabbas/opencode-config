@@ -73,6 +73,11 @@
           "resource": "*>*"
         },
         {
+          "action": "browsermcp_browser",
+          "effect": "allow",
+          "resource": "*"
+        },
+        {
           "action": "subagent",
           "effect": "allow",
           "resource": "*"
@@ -894,6 +899,11 @@
         },
         {
           "action": "grafana-prod_*",
+          "effect": "allow",
+          "resource": "*"
+        },
+        {
+          "action": "browsermcp_browser",
           "effect": "allow",
           "resource": "*"
         },
@@ -3234,6 +3244,11 @@
           "resource": "*"
         },
         {
+          "action": "browsermcp_*",
+          "effect": "allow",
+          "resource": "*"
+        },
+        {
           "action": "subagent",
           "effect": "allow",
           "resource": "*"
@@ -3403,6 +3418,11 @@
     "webresearcher": {
       "mode": "all",
       "permissions": [
+        {
+          "action": "browsermcp_browser",
+          "effect": "allow",
+          "resource": "*"
+        },
         {
           "action": "firecrawl_firecrawl_search",
           "effect": "allow",
@@ -3854,6 +3874,11 @@
     },
     {
       "action": "chrome-devtools_*",
+      "effect": "deny",
+      "resource": "*"
+    },
+    {
+      "action": "browsermcp_*",
       "effect": "deny",
       "resource": "*"
     },
@@ -11547,6 +11572,14 @@
           "npx",
           "-y",
           "chrome-devtools-mcp@latest"
+        ]
+      },
+      "browsermcp": {
+        "type": "local",
+        "command": [
+          "npx",
+          "-y",
+          "@browsermcp/mcp@2.5.0"
         ]
       },
       "dart-mcp-server": {
