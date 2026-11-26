@@ -316,6 +316,23 @@ This is the part that cannot be scripted, so it is written out step by step. **O
 
 The pair is per computer, stored in `~/.browsermcp/`. Steps 1–6 above are unchanged: install the extension, connect it, trigger, compare, allow. Nothing from this repo needs editing — the server entry is already in the shared `opencode.json`. The allow prompt also returns after `~/.browsermcp` is deleted, which is the supported way to reset it.
 
+**B2. Machine without the extension — this is expected, not broken**
+
+The server entry lives in the shared `opencode.json`, so it reaches every machine. That is deliberate: unlike `grafana-*`, `bitbucket` and `jira` — which sit in the per-machine `opencode.jsonc` because they hold internal hostnames and credentials — Browser MCP carries **no secrets and no internal URLs**, and it is useful wherever someone has Chrome. So it is not "work only"; it just may be unused.
+
+On a machine with no extension installed, the practical behaviour is:
+
+- `opencode mcp list` still reports `browsermcp connected` — the npm bridge starts fine, it simply has no browser to talk to.
+- Every tool call fails with the "Click Allow…" prompt, because the extension is what answers.
+- Nothing crashes, nothing prompts, no secret is exposed. The cost is one lazily started `npx` process.
+
+Two valid responses, pick per machine:
+
+- **Leave it alone.** If the machine never calls the tool, the cost is effectively zero and the entry is ready the day you install the extension there.
+- **Turn it off locally** by adding `"disabled": true` to a `browsermcp` override in the per-machine `opencode.jsonc`, the same way `github`, `pdf-reader` and `dart-mcp-server` are kept dormant in the shared file. Do not delete it from `opencode.json` — that removes it from the machine where it does work.
+
+Either way, do not treat "connected but every call asks for Allow" as a fault to debug: check whether the extension is installed before touching the config.
+
 **C. What success looks like**
 
 A `tab list` returns the user's real tabs (not a clean profile) and `goto` + `get title` work. A fresh agent-opened page lands in a named, coloured tab group per AI app; the toolbar badge counts the tabs agents hold. Tabs release after ~10 idle minutes.
@@ -324,7 +341,7 @@ A `tab list` returns the user's real tabs (not a clean profile) and `goto` + `ge
 
 | Symptom | Meaning | Fix |
 |---|---|---|
-| `Click Allow…` on every call | Pairing never completed | Open popup, compare codes, Allow, retry |
+| `Click Allow…` on every call | Pairing never completed — **or the extension is not installed on this machine at all** | Check the toolbar for the Browser MCP icon first; if it is missing, that is the whole problem (see B2). If present, open popup, compare codes, Allow, retry |
 | Popup: "Waiting for the Browser MCP server" | Daemon not running | An agent must have called the tool once; check `opencode mcp list`, restart the MCP server in `/mcps` |
 | `opencode mcp list` not `connected` | npm bridge failed | Chrome is irrelevant until this is green — check Node ≥ 20 and the pinned version |
 | Works, then dies after a Chrome restart | Extension lost its daemon socket | Reload the extension or restart the app; the pair persists, so no re-Allow should be needed |
