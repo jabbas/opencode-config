@@ -140,15 +140,17 @@ These apply to every agent (this file is injected globally via `Instruction.syst
   "Subagent (general-purpose)" for a review, read it as `@reviewer`.
   - **Design and plan review — always, in every repository, before execution.**
     This applies to every project and session, not only this config repo. Once a
-    design/spec and its implementation plan exist — wherever they are saved (usually
-    `docs/superpowers/specs/` and `docs/superpowers/plans/` of the current project) —
-    the coordinator dispatches `@reviewer` on both together BEFORE offering an
-    execution method or dispatching any implementer — no exceptions for "small" plans. Ask for: security
-    and correctness of the design, hand-checked test vectors, spec↔plan consistency
-    (including the plan's deliberate deviations), plan quality (interfaces, commands,
-    expected output), and simpler alternatives; findings as Critical / Important /
-    Minor. Relay them to the user, fix the agreed ones in the spec and plan, commit,
-    then hand off. Autopilot records the review and its rulings in its audit report.
+    design/spec and its implementation plan exist — wherever they are saved
+    (usually `docs/superpowers/specs/` and `docs/superpowers/plans/` of the
+    current project) — the coordinator dispatches `@reviewer` on both together
+    BEFORE offering an execution method or dispatching any implementer — no
+    exceptions for "small" plans. Ask for: security and correctness of the
+    design, hand-checked test vectors, spec↔plan consistency (including the
+    plan's deliberate deviations), plan quality (interfaces, commands, expected
+    output), and simpler alternatives; findings as Critical / Important / Minor.
+    Relay them to the user, fix the agreed ones in the spec and plan, commit,
+    then hand off. Autopilot records the review and its rulings in its audit
+    report.
   - **Never pass `model`** when dispatching `@reviewer` (sole exception: the
     Fallback below), even though SDD templates
     carry `model: [MODEL — REQUIRED]` — the reviewer's model comes from the
