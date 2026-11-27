@@ -5825,6 +5825,66 @@
     {
       "action": "shell",
       "effect": "allow",
+      "resource": "go build *"
+    },
+    {
+      "action": "shell",
+      "effect": "ask",
+      "resource": "go build *-o*"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "go test *"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "go mod tidy *"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "go mod download *"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "go mod why *"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "go install *"
+    },
+    {
+      "action": "shell",
+      "effect": "ask",
+      "resource": "go install *-o*"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "go doc *"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "go version *"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "go list *"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
+      "resource": "go fmt *"
+    },
+    {
+      "action": "shell",
+      "effect": "allow",
       "resource": "gofmt -l *"
     },
     {
